@@ -1,0 +1,97 @@
+"use server";
+
+import { createAdminClient } from "@/lib/supabase/admin";
+
+const CODE_RE = /^[A-Z2-9]{8}$/;
+
+export async function joinWithCode(
+  userId: string,
+  userEmail: string,
+  userMeta: Record<string, unknown>,
+  code: string
+): Promise<{ error?: string; tenantId?: string }> {
+  const normalizedCode = code.toUpperCase().trim();
+
+  if (!CODE_RE.test(normalizedCode)) {
+    return { error: "El código debe tener 8 caracteres. Compruébalo e inténtalo de nuevo." };
+  }
+
+  const admin = createAdminClient();
+
+  // Find the room by code
+  const { data: room } = await admin
+    .from("rooms")
+    .select("id, number, property_id, status, properties(id, landlord_id, name)")
+    .eq("join_code", normalizedCode)
+    .single();
+
+  if (!room) {
+    return { error: "Código no encontrado. Comprueba que lo has introducido correctamente." };
+  }
+
+  // Check if room already has an active tenant
+  const { data: existingTenant } = await admin
+    .from("tenants")
+    .select("id")
+    .eq("room_id", room.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (existingTenant) {
+    return { error: "Este código ya está en uso. Contacta con tu arrendador." };
+  }
+
+  // If user is already linked to another tenant record, deactivate it and free the old room
+  const { data: existingUserTenant } = await admin
+    .from("tenants")
+    .select("id, room_id")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (existingUserTenant) {
+    await admin.from("tenants").update({ is_active: false }).eq("id", existingUserTenant.id);
+    if (existingUserTenant.room_id) {
+      await admin.from("rooms").update({ status: "vacant" }).eq("id", existingUserTenant.room_id);
+    }
+  }
+
+  const property = room.properties as any;
+  const landlordId = property?.landlord_id;
+  if (!landlordId) return { error: "Propiedad no encontrada." };
+
+  const fullName = (userMeta?.full_name as string | undefined) ?? userEmail;
+
+  // Create tenant record
+  const { data: tenant, error: insertError } = await admin
+    .from("tenants")
+    .insert({
+      landlord_id: landlordId,
+      user_id: userId,
+      full_name: fullName,
+      email: userEmail,
+      phone: (userMeta?.phone as string | undefined) ?? "",
+      room_id: room.id,
+      is_active: true,
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !tenant) {
+    return { error: "Error al vincular la propiedad. Inténtalo de nuevo." };
+  }
+
+  // Mark room as occupied
+  await admin.from("rooms").update({ status: "occupied" }).eq("id", room.id);
+
+  // Update user metadata so future logins route correctly
+  await admin.auth.admin.updateUserById(userId, {
+    user_metadata: {
+      ...userMeta,
+      role: "tenant",
+      tenant_id: tenant.id,
+    },
+  });
+
+  return { tenantId: tenant.id };
+}

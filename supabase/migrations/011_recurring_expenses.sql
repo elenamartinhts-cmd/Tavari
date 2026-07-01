@@ -1,0 +1,1 @@
+alter table property_expenses add column if not exists is_recurring boolean not null default false;

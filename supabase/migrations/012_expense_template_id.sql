@@ -1,0 +1,1 @@
+alter table property_expenses add column if not exists template_id uuid references property_expenses(id) on delete set null;

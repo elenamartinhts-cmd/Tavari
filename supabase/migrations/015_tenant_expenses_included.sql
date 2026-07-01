@@ -1,0 +1,1 @@
+alter table tenants add column if not exists expenses_included boolean not null default false;
