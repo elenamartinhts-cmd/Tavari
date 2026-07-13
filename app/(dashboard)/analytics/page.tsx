@@ -4,6 +4,7 @@ import {
   Building2, DoorOpen, TrendingUp, Users,
   CreditCard, Wrench, Percent, ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
+import { MAINTENANCE_CATEGORY_LABELS } from "@/lib/maintenance";
 import RevenueBarChart from "@/components/analytics/revenue-bar-chart";
 import OccupancyByProperty from "@/components/analytics/occupancy-by-property";
 import PaymentHealthBar from "@/components/analytics/payment-health-bar";
@@ -72,18 +73,6 @@ function currentMonthKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  plumbing: "Fontanería",
-  electricity: "Electricidad",
-  heating: "Calefacción",
-  internet: "Internet",
-  appliances: "Electrodomésticos",
-  locks: "Cerraduras",
-  cleaning: "Limpieza",
-  pest_control: "Plagas",
-  water_leak: "Fuga de agua",
-  other: "Otro",
-};
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
@@ -153,7 +142,7 @@ export default async function AnalyticsPage() {
       return acc;
     }, {})
   )
-    .map(([cat, count]) => ({ category: cat, label: CATEGORY_LABELS[cat] ?? cat, count: count as number }))
+    .map(([cat, count]) => ({ category: cat, label: MAINTENANCE_CATEGORY_LABELS[cat] ?? cat, count: count as number }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 

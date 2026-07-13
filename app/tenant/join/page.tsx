@@ -14,9 +14,7 @@ export default function TenantJoinPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userMeta, setUserMeta] = useState<Record<string, unknown>>({});
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -26,9 +24,7 @@ export default function TenantJoinPage() {
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (authError) { setError(authError.message); return; }
-    setUserId(data.user.id);
     setUserEmail(data.user.email ?? email);
-    setUserMeta(data.user.user_metadata ?? {});
 
     // If already a tenant, redirect straight to portal
     const role = data.user.user_metadata?.role;
@@ -43,10 +39,10 @@ export default function TenantJoinPage() {
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
-    if (!userId || !userEmail) return;
+    if (!loggedIn) return;
     setLoading(true);
     setError(null);
-    const result = await joinWithCode(userId, userEmail, userMeta, code);
+    const result = await joinWithCode(code);
     setLoading(false);
     if (result.error) { setError(result.error); return; }
     window.location.href = "/tenant/setup";

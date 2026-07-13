@@ -27,8 +27,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/register");
+  const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
 
   const isPortalRoute = request.nextUrl.pathname.startsWith("/portal");
   const isSetupRoute = request.nextUrl.pathname.startsWith("/tenant/setup");

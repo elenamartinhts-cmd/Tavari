@@ -4,6 +4,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+async function findAuthUserByEmail(admin: ReturnType<typeof createAdminClient>, email: string) {
+  let page = 1;
+  while (true) {
+    const { data } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    const users = data?.users ?? [];
+    const found = users.find((u) => u.email === email);
+    if (found) return found;
+    if (users.length < 1000) return undefined;
+    page++;
+  }
+}
+
 export async function inviteTenant(
   tenantId: string
 ): Promise<{ error?: string; success?: boolean; alreadyExists?: boolean }> {
@@ -34,8 +46,7 @@ export async function inviteTenant(
     if (error.message.toLowerCase().includes("already been registered") ||
         error.message.toLowerCase().includes("already registered") ||
         error.message.toLowerCase().includes("user already registered")) {
-      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      const existing = list?.users?.find((u) => u.email === tenant.email);
+      const existing = await findAuthUserByEmail(admin, tenant.email);
       if (existing) {
         await admin.auth.admin.updateUserById(existing.id, {
           user_metadata: { role: "tenant", tenant_id: tenantId },

@@ -1,13 +1,11 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 const CODE_RE = /^[A-Z2-9]{8}$/;
 
 export async function joinWithCode(
-  userId: string,
-  userEmail: string,
-  userMeta: Record<string, unknown>,
   code: string
 ): Promise<{ error?: string; tenantId?: string }> {
   const normalizedCode = code.toUpperCase().trim();
@@ -16,27 +14,36 @@ export async function joinWithCode(
     return { error: "El código debe tener 8 caracteres. Compruébalo e inténtalo de nuevo." };
   }
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado" };
+
+  const userId = user.id;
+  const userEmail = user.email ?? "";
+  const userMeta = user.user_metadata ?? {};
+
   const admin = createAdminClient();
 
   // Find the room by code
-  const { data: room } = await admin
+  const { data: room, error: roomError } = await admin
     .from("rooms")
     .select("id, number, property_id, status, properties(id, landlord_id, name)")
     .eq("join_code", normalizedCode)
     .single();
 
-  if (!room) {
+  if (roomError || !room) {
     return { error: "Código no encontrado. Comprueba que lo has introducido correctamente." };
   }
 
   // Check if room already has an active tenant
-  const { data: existingTenant } = await admin
+  const { data: existingTenant, error: occupiedError } = await admin
     .from("tenants")
     .select("id")
     .eq("room_id", room.id)
     .eq("is_active", true)
     .maybeSingle();
 
+  if (occupiedError) return { error: "Error al verificar disponibilidad. Inténtalo de nuevo." };
   if (existingTenant) {
     return { error: "Este código ya está en uso. Contacta con tu arrendador." };
   }

@@ -33,6 +33,8 @@ export async function completeTenantSetup(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "No autenticado" };
 
+  if (user.user_metadata?.role !== "tenant") return { error: "No autorizado" };
+
   const tenantId = user.user_metadata?.tenant_id as string | undefined;
   if (!tenantId) return { error: "Cuenta no vinculada a ningún inquilino" };
 

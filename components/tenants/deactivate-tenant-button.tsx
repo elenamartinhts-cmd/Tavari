@@ -56,15 +56,24 @@ export default function DeactivateTenantButton({
         .from("rooms")
         .update({ status: "vacant" })
         .eq("id", tenant.room_id);
-      if (roomError) console.error("Room status update error:", roomError.message);
+      if (roomError) {
+        setError("El inquilino fue dado de baja, pero no se pudo liberar la habitación. Actualízala manualmente.");
+        setLoading(false);
+        return;
+      }
     }
 
     // Terminate the active contract with the chosen end date
-    await supabase
+    const { error: contractError } = await supabase
       .from("contracts")
       .update({ status: "terminated", end_date: endDate })
       .eq("tenant_id", tenantId)
       .in("status", ["active", "pending_signature", "draft"]);
+    if (contractError) {
+      setError("El inquilino fue dado de baja, pero no se pudo finalizar el contrato. Actualízalo manualmente.");
+      setLoading(false);
+      return;
+    }
 
     setLoading(false);
     setOpen(false);
