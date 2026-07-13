@@ -22,7 +22,6 @@ export default function ContactForm({
   tenantId,
 }: {
   tenantId: string;
-  tenantName: string;
 }) {
   const boundAction = submitIssue.bind(null, tenantId);
   const [state, formAction] = useFormState<SubmitIssueState, FormData>(

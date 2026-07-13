@@ -210,7 +210,13 @@ export default async function TenantPortalPage({ params }: { params: Promise<{ t
       {/* Issues */}
       <div id="incidencias">
         <Section title="Reportar una incidencia">
-          <ContactForm tenantId={tenantId} tenantName={tenant.full_name} />
+          {room ? (
+            <ContactForm tenantId={tenantId} tenantName={tenant.full_name} />
+          ) : (
+            <p className="text-sm text-gray-400 italic py-2">
+              No tienes una habitación asignada. Contacta con tu arrendador para reportar incidencias.
+            </p>
+          )}
         </Section>
 
         {openIssues.length > 0 && (

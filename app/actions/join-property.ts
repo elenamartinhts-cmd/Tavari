@@ -48,18 +48,27 @@ export async function joinWithCode(
     return { error: "Este código ya está en uso. Contacta con tu arrendador." };
   }
 
-  // If user is already linked to another tenant record, deactivate it and free the old room
-  const { data: existingUserTenant } = await admin
+  // Deactivate any existing active tenant for this user (by user_id or by email with no user_id set yet)
+  const { data: existingByUserId } = await admin
     .from("tenants")
     .select("id, room_id")
     .eq("user_id", userId)
     .eq("is_active", true)
     .maybeSingle();
 
-  if (existingUserTenant) {
-    await admin.from("tenants").update({ is_active: false }).eq("id", existingUserTenant.id);
-    if (existingUserTenant.room_id) {
-      await admin.from("rooms").update({ status: "vacant" }).eq("id", existingUserTenant.room_id);
+  const { data: existingByEmail } = await admin
+    .from("tenants")
+    .select("id, room_id")
+    .eq("email", userEmail)
+    .is("user_id", null)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  for (const existing of [existingByUserId, existingByEmail]) {
+    if (!existing) continue;
+    await admin.from("tenants").update({ is_active: false }).eq("id", existing.id);
+    if (existing.room_id) {
+      await admin.from("rooms").update({ status: "vacant" }).eq("id", existing.room_id);
     }
   }
 

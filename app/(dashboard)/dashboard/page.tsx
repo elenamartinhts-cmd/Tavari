@@ -218,7 +218,7 @@ function IssueRow({ issue }: { issue: MaintenanceIssue & { properties: { name: s
     medium: { label: "Media", class: "text-amber-700 bg-amber-100" },
     low: { label: "Baja", class: "text-gray-600 bg-gray-100" },
   };
-  const p = priorityConfig[issue.priority];
+  const p = priorityConfig[issue.priority as keyof typeof priorityConfig] ?? { label: issue.priority, class: "text-gray-600 bg-gray-100" };
 
   return (
     <li className="flex items-center justify-between px-6 py-3.5">
