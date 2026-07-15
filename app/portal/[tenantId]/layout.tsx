@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import PortalSidebar from "@/components/portal/portal-sidebar";
 
 export default async function PortalLayout({
@@ -10,8 +11,19 @@ export default async function PortalLayout({
   params: Promise<{ tenantId: string }>;
 }) {
   const { tenantId } = await params;
-  const supabase = createAdminClient();
-  const { data: tenant } = await supabase
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const role = user.user_metadata?.role as string | undefined;
+  if (role === "tenant") {
+    const myTenantId = user.user_metadata?.tenant_id as string | undefined;
+    if (myTenantId && myTenantId !== tenantId) redirect(`/portal/${myTenantId}`);
+  }
+
+  const admin = createAdminClient();
+  const { data: tenant } = await admin
     .from("tenants")
     .select("full_name, email, is_active")
     .eq("id", tenantId)

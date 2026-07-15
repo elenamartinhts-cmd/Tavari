@@ -37,8 +37,8 @@ export async function middleware(request: NextRequest) {
   const role = user?.user_metadata?.role as string | undefined;
   const isTenant = role === "tenant";
 
-  // Unauthenticated: redirect to login (except portal, setup, join, and update-password)
-  if (!user && !isAuthRoute && !isPortalRoute && !isSetupRoute && !isJoinRoute && !isUpdatePasswordRoute) {
+  // Unauthenticated: redirect to login (except setup, join, and update-password)
+  if (!user && !isAuthRoute && !isSetupRoute && !isJoinRoute && !isUpdatePasswordRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -47,6 +47,17 @@ export async function middleware(request: NextRequest) {
   // Tenant finishing setup, joining, or updating password — let them through
   if (user && (isSetupRoute || isJoinRoute || isUpdatePasswordRoute)) {
     return supabaseResponse;
+  }
+
+  // Tenant trying to view another tenant's portal — redirect to their own
+  if (user && isTenant && isPortalRoute) {
+    const tenantId = user.user_metadata?.tenant_id as string | undefined;
+    const urlTenantId = request.nextUrl.pathname.split("/")[2];
+    if (tenantId && urlTenantId && tenantId !== urlTenantId) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/portal/${tenantId}`;
+      return NextResponse.redirect(url);
+    }
   }
 
   // Logged-in user on auth page → redirect to their home

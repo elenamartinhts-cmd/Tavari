@@ -7,7 +7,7 @@ export default function PortalLinkButton({ tenantId }: { tenantId: string }) {
   const [copied, setCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  const portalUrl = `${window?.location?.origin ?? ""}/portal/${tenantId}`;
+  const portalUrl = `${window?.location?.origin ?? ""}/login`;
 
   async function handleCopy() {
     await navigator.clipboard.writeText(portalUrl);
@@ -32,7 +32,7 @@ export default function PortalLinkButton({ tenantId }: { tenantId: string }) {
               <div>
                 <h3 className="font-semibold text-gray-900">Portal del inquilino</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Comparte este enlace con tu inquilino para que pueda reportar incidencias.
+                  Comparte este enlace con tu inquilino. Debe iniciar sesión con las credenciales que le has enviado.
                 </p>
               </div>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 ml-2">
@@ -62,7 +62,7 @@ export default function PortalLinkButton({ tenantId }: { tenantId: string }) {
             </button>
 
             <p className="text-xs text-gray-400 text-center mt-3">
-              El inquilino accede sin necesidad de crear una cuenta.
+              El inquilino inicia sesión con el email y contraseña de su cuenta.
             </p>
           </div>
         </div>
