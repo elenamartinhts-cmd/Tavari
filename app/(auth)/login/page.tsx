@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup" | "recover";
@@ -9,7 +8,6 @@ type Mode = "login" | "signup" | "recover";
 const inp = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-olive-500";
 
 export default function LoginPage() {
-  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,10 +18,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("error") === "confirmation_failed") {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "confirmation_failed") {
       setError("El enlace de acceso ha caducado o ya fue usado. Solicita uno nuevo al arrendador o usa el código de habitación.");
     }
-  }, [searchParams]);
+  }, []);
 
   function switchMode(m: Mode) {
     setMode(m);
