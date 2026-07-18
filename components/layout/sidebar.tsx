@@ -70,20 +70,20 @@ export default function Sidebar({ userName, userEmail, userPhone }: { userName: 
 
   return (
     <aside className="w-60 bg-olive-800 border-r border-olive-900 flex flex-col">
-      <div className="h-16 flex items-center justify-center border-b border-white/10">
-        <svg viewBox="0 0 150 40" width="136" height="36" xmlns="http://www.w3.org/2000/svg">
+      <div className="h-16 flex items-center px-6 border-b border-white/10">
+        <svg viewBox="0 0 95 37" width="88" height="34" xmlns="http://www.w3.org/2000/svg">
           <text
-            x="75" y="21"
-            textAnchor="middle"
+            x="0" y="19"
+            textAnchor="start"
             fill="white"
             fontFamily="Georgia, 'Times New Roman', serif"
             fontSize="15"
-            letterSpacing="6"
+            letterSpacing="5"
             fontWeight="400"
           >TAVARI</text>
-          <line x1="4"  y1="31" x2="60"  y2="31" stroke="white" strokeWidth="0.7" strokeOpacity="0.4" />
-          <polygon points="75,27 78.5,31 75,35 71.5,31" fill="white" fillOpacity="0.4" />
-          <line x1="90" y1="31" x2="146" y2="31" stroke="white" strokeWidth="0.7" strokeOpacity="0.4" />
+          <line x1="0"  y1="30" x2="31" y2="30" stroke="white" strokeWidth="0.75" strokeOpacity="0.45" />
+          <polygon points="38,26.5 41.5,30 38,33.5 34.5,30" fill="white" fillOpacity="0.45" />
+          <line x1="45" y1="30" x2="76" y2="30" stroke="white" strokeWidth="0.75" strokeOpacity="0.45" />
         </svg>
       </div>
 
