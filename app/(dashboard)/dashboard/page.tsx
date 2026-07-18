@@ -13,6 +13,9 @@ import {
 import Link from "next/link";
 import type { DashboardStats, MaintenanceIssue, Tenant } from "@/lib/types";
 import Greeting from "@/components/layout/greeting";
+import MonthlyChart from "@/components/dashboard/monthly-chart";
+
+const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 async function getDashboardData(landlordId: string) {
   const supabase = await createClient();
@@ -46,7 +49,16 @@ async function getDashboardData(landlordId: string) {
     urgent_issues: issuesRes.data?.filter((i) => i.priority === "urgent").length ?? 0,
   };
 
-  return { stats, issues: issuesRes.data ?? [], tenants: tenantsRes.data ?? [] };
+  const monthlyIncome = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const amount = payments
+      .filter((p: any) => p.status === "paid" && (p.paid_date ?? p.due_date)?.startsWith(key))
+      .reduce((sum: number, p: any) => sum + p.amount, 0);
+    return { label: MONTHS_ES[d.getMonth()], amount };
+  });
+
+  return { stats, issues: issuesRes.data ?? [], tenants: tenantsRes.data ?? [], monthlyIncome };
 }
 
 export default async function DashboardPage() {
@@ -54,7 +66,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { stats, issues, tenants } = await getDashboardData(user.id);
+  const { stats, issues, tenants, monthlyIncome } = await getDashboardData(user.id);
 
   const rawName = (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0] ?? "propietario";
   const firstName = rawName.split(" ")[0];
@@ -99,6 +111,17 @@ export default async function DashboardPage() {
           href="/payments"
           alert={stats.pending_income > 0}
         />
+      </div>
+
+      {/* Monthly income chart */}
+      <div className="bg-white rounded-xl border border-gray-200 px-6 pt-5 pb-3 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-900">Ingresos mensuales</h2>
+          <Link href="/payments" className="text-xs text-olive-600 hover:underline flex items-center gap-0.5">
+            Ver pagos <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+        <MonthlyChart data={monthlyIncome} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
