@@ -69,9 +69,9 @@ export default function Sidebar({ userName, userEmail, userPhone }: { userName: 
   const displayLetter = (currentName || userEmail).charAt(0).toUpperCase();
 
   return (
-    <aside className="w-60 bg-[#F2EDE3] border-r border-[#DDD6C8] flex flex-col">
-      <div className="h-16 flex items-center px-6 border-b border-[#DDD6C8]">
-        <span className="text-xl font-bold text-olive-700 tracking-tight">Tavari</span>
+    <aside className="w-60 bg-olive-800 border-r border-olive-900 flex flex-col">
+      <div className="h-16 flex items-center px-6 border-b border-white/10">
+        <span className="text-xl font-bold text-white tracking-tight">Tavari</span>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -82,8 +82,8 @@ export default function Sidebar({ userName, userEmail, userPhone }: { userName: 
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
               pathname === href || pathname.startsWith(href + "/")
-                ? "bg-olive-100 text-olive-800"
-                : "text-stone-600 hover:bg-[#E8E1D4] hover:text-stone-900"
+                ? "bg-white/10 text-white"
+                : "text-white/60 hover:bg-white/10 hover:text-white"
             )}
           >
             <Icon className="w-4 h-4 flex-shrink-0" />
@@ -92,7 +92,7 @@ export default function Sidebar({ userName, userEmail, userPhone }: { userName: 
         ))}
       </nav>
 
-      <div className="p-3 border-t border-[#DDD6C8]">
+      <div className="p-3 border-t border-white/10">
         {/* Profile edit panel */}
         {editOpen && (
           <div className="mb-2 bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
@@ -135,28 +135,28 @@ export default function Sidebar({ userName, userEmail, userPhone }: { userName: 
 
         {/* User row */}
         <div
-          className="flex items-center gap-3 px-3 py-2 mb-1 rounded-lg group cursor-pointer hover:bg-[#E8E1D4] transition-colors"
+          className="flex items-center gap-3 px-3 py-2 mb-1 rounded-lg group cursor-pointer hover:bg-white/10 transition-colors"
           onClick={() => { setEditName(currentName); setEditPhone(currentPhone); setEditOpen((v) => !v); }}
         >
-          <div className="w-8 h-8 rounded-full bg-olive-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-semibold text-olive-700">{displayLetter}</span>
+          <div className="w-8 h-8 rounded-full bg-olive-600 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-semibold text-white">{displayLetter}</span>
           </div>
           <div className="min-w-0 flex-1">
             {currentName ? (
               <>
-                <p className="text-xs font-medium text-stone-700 truncate">{currentName}</p>
-                <p className="text-xs text-stone-400 truncate">{currentPhone || userEmail}</p>
+                <p className="text-xs font-medium text-white truncate">{currentName}</p>
+                <p className="text-xs text-white/40 truncate">{currentPhone || userEmail}</p>
               </>
             ) : (
-              <p className="text-xs text-stone-500 truncate">{userEmail}</p>
+              <p className="text-xs text-white/60 truncate">{userEmail}</p>
             )}
           </div>
-          <Pencil className="w-3 h-3 text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          <Pencil className="w-3 h-3 text-white/40 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </div>
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-stone-500 hover:bg-[#E8E1D4] hover:text-stone-900 transition-colors"
+          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-white/50 hover:bg-white/10 hover:text-white transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Cerrar sesión
