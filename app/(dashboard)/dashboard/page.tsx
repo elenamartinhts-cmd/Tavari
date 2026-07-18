@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { DashboardStats, MaintenanceIssue, Tenant } from "@/lib/types";
+import Greeting from "@/components/layout/greeting";
 
 async function getDashboardData(landlordId: string) {
   const supabase = await createClient();
@@ -55,8 +56,6 @@ export default async function DashboardPage() {
 
   const { stats, issues, tenants } = await getDashboardData(user.id);
 
-  const now = new Date();
-  const greeting = now.getHours() < 13 ? "Buenos días" : now.getHours() < 20 ? "Buenas tardes" : "Buenas noches";
   const rawName = (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0] ?? "propietario";
   const firstName = rawName.split(" ")[0];
 
@@ -66,15 +65,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {greeting}, {firstName}
-        </h1>
-        <p className="text-gray-500 mt-0.5">
-          {now.toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-        </p>
-      </div>
+      <Greeting firstName={firstName} />
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
