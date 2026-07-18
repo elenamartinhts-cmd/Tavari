@@ -113,51 +113,52 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Monthly income chart */}
-      <div className="bg-white rounded-xl border border-gray-200 px-6 pt-5 pb-3 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-900">Ingresos mensuales</h2>
-          <Link href="/payments" className="text-xs text-olive-600 hover:underline flex items-center gap-0.5">
-            Ver pagos <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-        <MonthlyChart data={monthlyIncome} />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Open issues */}
-        <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-gray-500" />
-              <h2 className="text-sm font-semibold text-gray-900">Incidencias abiertas</h2>
-              {stats.urgent_issues > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
-                  <AlertTriangle className="w-3 h-3" />
-                  {stats.urgent_issues} urgente{stats.urgent_issues > 1 ? "s" : ""}
-                </span>
-              )}
+        {/* Left column: issues + chart */}
+        <div className="flex flex-col gap-6">
+          <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Wrench className="w-4 h-4 text-gray-500" />
+                <h2 className="text-sm font-semibold text-gray-900">Incidencias abiertas</h2>
+                {stats.urgent_issues > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+                    <AlertTriangle className="w-3 h-3" />
+                    {stats.urgent_issues} urgente{stats.urgent_issues > 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+              <Link href="/maintenance" className="text-xs text-olive-600 hover:underline flex items-center gap-0.5">
+                Ver todas <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
-            <Link href="/maintenance" className="text-xs text-olive-600 hover:underline flex items-center gap-0.5">
-              Ver todas <ArrowRight className="w-3 h-3" />
-            </Link>
+            {issues.length === 0 ? (
+              <div className="px-6 py-8 text-center">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Sin incidencias abiertas</p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-gray-50">
+                {issues.map((issue) => (
+                  <IssueRow key={issue.id} issue={issue as any} />
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* Monthly income chart */}
+          <div className="bg-white rounded-xl border border-gray-200 px-6 pt-5 pb-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-900">Ingresos mensuales</h2>
+              <Link href="/payments" className="text-xs text-olive-600 hover:underline flex items-center gap-0.5">
+                Ver pagos <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <MonthlyChart data={monthlyIncome} />
           </div>
+        </div>
 
-          {issues.length === 0 ? (
-            <div className="px-6 py-8 text-center">
-              <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Sin incidencias abiertas</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-gray-50">
-              {issues.map((issue) => (
-                <IssueRow key={issue.id} issue={issue as any} />
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* Recent tenants */}
+        {/* Right column: tenants */}
         <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Inquilinos activos</h2>
