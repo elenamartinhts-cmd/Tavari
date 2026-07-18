@@ -24,6 +24,7 @@ export default function AddTenantDialog({ vacantRooms }: { vacantRooms: VacantRo
     move_in_date: "",
     move_out_date: "",
     expenses_included: false,
+    payment_day: "5",
   });
 
   function set(field: keyof typeof form) {
@@ -46,6 +47,7 @@ export default function AddTenantDialog({ vacantRooms }: { vacantRooms: VacantRo
         ...form,
         move_out_date: hasEndDate ? form.move_out_date : "",
         expenses_included: form.expenses_included,
+        payment_day: parseInt(form.payment_day, 10) || 5,
       });
       if (result.error) { setError(result.error); return; }
       if (result.warning) setWarning(result.warning);
@@ -60,7 +62,7 @@ export default function AddTenantDialog({ vacantRooms }: { vacantRooms: VacantRo
     setError(null);
     setWarning(null);
     setHasEndDate(true);
-    setForm({ full_name: "", email: "", room_id: "", move_in_date: "", move_out_date: "", expenses_included: false });
+    setForm({ full_name: "", email: "", room_id: "", move_in_date: "", move_out_date: "", expenses_included: false, payment_day: "5" });
     router.refresh();
   }
 
@@ -133,6 +135,20 @@ export default function AddTenantDialog({ vacantRooms }: { vacantRooms: VacantRo
                   </Field>
                   <Field label="Fecha de entrada">
                     <input type="date" value={form.move_in_date} onChange={set("move_in_date")} className={inp} />
+                  </Field>
+
+                  <Field label="Día de pago mensual">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        max="28"
+                        value={form.payment_day}
+                        onChange={set("payment_day")}
+                        className={`w-20 ${inp}`}
+                      />
+                      <span className="text-sm text-gray-500">de cada mes</span>
+                    </div>
                   </Field>
 
                   <div>
