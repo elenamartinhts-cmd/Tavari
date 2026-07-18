@@ -57,7 +57,8 @@ export default async function DashboardPage() {
 
   const now = new Date();
   const greeting = now.getHours() < 13 ? "Buenos días" : now.getHours() < 20 ? "Buenas tardes" : "Buenas noches";
-  const firstName = user.email?.split("@")[0] ?? "propietario";
+  const rawName = (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0] ?? "propietario";
+  const firstName = rawName.split(" ")[0];
 
   const occupancyRate = stats.total_rooms > 0
     ? Math.round((stats.occupied_rooms / stats.total_rooms) * 100)
