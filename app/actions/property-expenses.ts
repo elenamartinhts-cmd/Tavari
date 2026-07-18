@@ -67,7 +67,7 @@ export async function addPropertyExpense({
 
   const admin = createAdminClient();
 
-  const { data: expense, error: expenseError } = await admin
+  const { data: rows, error: expenseError } = await admin
     .from("property_expenses")
     .insert({
       property_id,
@@ -81,10 +81,17 @@ export async function addPropertyExpense({
       is_recurring: is_recurring ?? false,
       template_id: null,
     })
-    .select("id")
-    .single();
+    .select("id");
 
-  if (expenseError || !expense) return { error: expenseError?.message ?? "Error al guardar el gasto" };
+  if (expenseError) {
+    console.error("[addPropertyExpense] insert error:", expenseError.code, expenseError.message);
+    return { error: expenseError.message };
+  }
+  if (!rows?.length) {
+    console.error("[addPropertyExpense] no rows returned after insert");
+    return { error: "Error al guardar el gasto" };
+  }
+  const expense = rows[0];
 
   // Recurring templates get no shares — they're applied per-month on demand
   if (!is_recurring) {
@@ -92,7 +99,10 @@ export async function addPropertyExpense({
     const shares = buildShares(expense.id, amount, tenants);
     if (shares.length > 0) {
       const { error: sharesError } = await admin.from("expense_shares").insert(shares);
-      if (sharesError) return { error: sharesError.message };
+      if (sharesError) {
+        console.error("[addPropertyExpense] shares insert error:", sharesError.code, sharesError.message);
+        return { error: sharesError.message };
+      }
     }
   }
 
