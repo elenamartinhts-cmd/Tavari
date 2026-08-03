@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import type { Room, Tenant } from "@/lib/types";
 import RoomStatusBadge from "./room-status-badge";
@@ -51,7 +52,9 @@ export default function RoomCard({ room, tenant }: { room: Room; tenant: Tenant 
         <div className="flex items-center gap-2">
           <User className="w-4 h-4 text-gray-300 flex-shrink-0" />
           {tenant ? (
-            <span className="text-sm text-gray-700 font-medium">{tenant.full_name}</span>
+            <Link href={`/tenants/${tenant.id}`} className="text-sm text-olive-600 font-medium hover:underline">
+              {tenant.full_name}
+            </Link>
           ) : (
             <span className="text-sm text-gray-400 italic">Sin inquilino</span>
           )}
