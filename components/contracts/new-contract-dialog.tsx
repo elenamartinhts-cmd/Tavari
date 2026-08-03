@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, RefreshCw } from "lucide-react";
 import { applyVariables, type ContractData } from "@/lib/contract-variables";
 
 type TenantOption = {
@@ -44,6 +44,7 @@ export default function NewContractDialog({
     monthly_rent: defaultTenant?.rooms ? String(defaultTenant.rooms.monthly_rent) : "",
     deposit_amount: defaultTenant?.rooms ? String(defaultTenant.rooms.deposit_amount) : "",
     notes: "",
+    is_rolling: false,
   });
   const [preview, setPreview] = useState<string | null>(null);
   const router = useRouter();
@@ -134,7 +135,8 @@ export default function NewContractDialog({
       template_id: form.template_id || null,
       generated_content: generatedContent,
       start_date: form.start_date,
-      end_date: form.end_date || null,
+      end_date: form.is_rolling ? null : (form.end_date || null),
+      is_rolling: form.is_rolling,
       monthly_rent: parseFloat(form.monthly_rent) || selectedTenant?.rooms?.monthly_rent || 0,
       deposit_amount: parseFloat(form.deposit_amount) || selectedTenant?.rooms?.deposit_amount || 0,
       status: "draft",
@@ -157,6 +159,7 @@ export default function NewContractDialog({
       monthly_rent: defaultTenant?.rooms ? String(defaultTenant.rooms.monthly_rent) : "",
       deposit_amount: defaultTenant?.rooms ? String(defaultTenant.rooms.deposit_amount) : "",
       notes: "",
+      is_rolling: false,
     });
     setPreview(null);
   }
@@ -214,11 +217,41 @@ export default function NewContractDialog({
                   <label className="block text-xs font-medium text-gray-700 mb-1">Fecha inicio *</label>
                   <input type="date" value={form.start_date} onChange={set("start_date")} required className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-olive-500" />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Fecha fin</label>
-                  <input type="date" value={form.end_date} onChange={set("end_date")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-olive-500" />
-                </div>
+                {!form.is_rolling && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Fecha fin</label>
+                    <input type="date" value={form.end_date} onChange={set("end_date")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-olive-500" />
+                  </div>
+                )}
               </div>
+
+              {/* Mes a mes toggle */}
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, is_rolling: !f.is_rolling, end_date: f.is_rolling ? f.end_date : "" }))}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-colors text-left ${
+                  form.is_rolling
+                    ? "border-olive-500 bg-olive-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors ${
+                  form.is_rolling ? "bg-olive-600 border-olive-600" : "border-gray-300"
+                }`}>
+                  {form.is_rolling && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${form.is_rolling ? "text-olive-800" : "text-gray-700"}`}>
+                    Mes a mes
+                  </p>
+                  <p className="text-xs text-gray-400">Sin fecha de fin · el inquilino debe dar 1 mes de preaviso</p>
+                </div>
+                <RefreshCw className={`w-4 h-4 ml-auto shrink-0 ${form.is_rolling ? "text-olive-600" : "text-gray-300"}`} />
+              </button>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

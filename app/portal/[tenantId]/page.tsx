@@ -9,6 +9,7 @@ import {
 import ContactForm from "@/components/tenant-portal/contact-form";
 import PortalContracts from "@/components/tenant-portal/portal-contracts";
 import ExpenseNotifications from "@/components/tenant-portal/expense-notifications";
+import PaymentNotifications from "@/components/tenant-portal/payment-notifications";
 
 async function getTenantPortalData(tenantId: string) {
   const supabase = createAdminClient();
@@ -48,10 +49,10 @@ async function getTenantPortalData(tenantId: string) {
 
   const { data: notifications } = await supabase
     .from("tenant_notifications")
-    .select("id, title, data, read_at, created_at")
+    .select("id, type, title, data, read_at, created_at")
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(40);
 
   const { data: payments } = await supabase
     .from("payments")
@@ -95,6 +96,11 @@ export default async function TenantPortalPage({ params }: { params: Promise<{ t
   const room = tenant.rooms as any;
   const property = room?.properties;
 
+  const expenseNotifs = notifications.filter((n: any) => n.type === "expense_summary");
+  const paymentNotifs = notifications.filter((n: any) =>
+    n.type === "payment_upcoming" || n.type === "payment_due" || n.type === "payment_overdue"
+  );
+
   const firstName = tenant.full_name.split(" ")[0];
   const openIssues     = issues.filter((i: any) => i.status !== "resolved" && i.status !== "closed");
   const resolvedIssues = issues.filter((i: any) => i.status === "resolved" || i.status === "closed");
@@ -117,8 +123,11 @@ export default async function TenantPortalPage({ params }: { params: Promise<{ t
         </div>
       </div>
 
+      {/* Payment notifications */}
+      <PaymentNotifications notifications={paymentNotifs as any} tenantId={tenantId} />
+
       {/* Expense notifications */}
-      <ExpenseNotifications notifications={notifications as any} tenantId={tenantId} />
+      <ExpenseNotifications notifications={expenseNotifs as any} tenantId={tenantId} />
 
       {/* Quick stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

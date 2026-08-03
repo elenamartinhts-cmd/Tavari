@@ -5,6 +5,18 @@ import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup" | "recover";
 
+function translateAuthError(msg: string): string {
+  if (/invalid login credentials/i.test(msg)) return "Email o contraseña incorrectos.";
+  if (/email not confirmed/i.test(msg)) return "Confirma tu email antes de entrar. Revisa tu bandeja de entrada.";
+  if (/user already registered/i.test(msg)) return "Ya existe una cuenta con ese email.";
+  if (/password should be at least/i.test(msg)) return "La contraseña debe tener al menos 6 caracteres.";
+  if (/unable to validate email address/i.test(msg)) return "El email no es válido.";
+  if (/email rate limit exceeded/i.test(msg)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
+  if (/too many requests/i.test(msg)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
+  if (/network/i.test(msg)) return "Error de conexión. Comprueba tu internet.";
+  return msg;
+}
+
 const inp = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-olive-500";
 
 export default function LoginPage() {
@@ -36,7 +48,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
       setLoading(false);
     } else {
       const meta = data.user?.user_metadata;
@@ -73,7 +85,7 @@ export default function LoginPage() {
       },
     });
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
     } else {
       setError("Revisa tu email para confirmar el registro.");
     }
@@ -90,7 +102,7 @@ export default function LoginPage() {
       redirectTo: `${window.location.origin}/update-password`,
     });
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
     } else {
       setError("Revisa tu email. Te hemos enviado un enlace para restablecer tu contraseña.");
     }

@@ -122,6 +122,9 @@ export interface Contract {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  is_rolling: boolean;
+  notice_given_at: string | null;
+  document_url: string | null;
 }
 
 export interface PropertyExpense {

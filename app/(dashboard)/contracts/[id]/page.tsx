@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronLeft, MapPin, DoorOpen, CalendarDays,
-  CreditCard, FileCheck, FileX, Clock, Send,
+  CreditCard, FileCheck, FileX, Clock, Send, RefreshCw, BellRing,
 } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { computeContractStatus } from "@/lib/contracts";
@@ -12,6 +12,8 @@ import ContractStatusBadge from "@/components/contracts/contract-status-badge";
 import SignContractButton from "@/components/contracts/sign-contract-buttons";
 import UpdateContractStatusDialog from "@/components/contracts/update-contract-status-dialog";
 import TerminateContractDialog from "@/components/contracts/terminate-contract-dialog";
+import RegisterNoticeDialog from "@/components/contracts/register-notice-dialog";
+import ContractDocumentUpload from "@/components/contracts/contract-document-upload";
 import ContractContentViewer from "@/components/contracts/contract-content-viewer";
 import PortalLinkButton from "@/components/tenants/portal-link-button";
 
@@ -70,6 +72,9 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
         </div>
         {!isClosed && (
           <div className="flex items-center gap-2">
+            {contract.is_rolling && !contract.notice_given_at && (
+              <RegisterNoticeDialog contractId={contract.id} />
+            )}
             <UpdateContractStatusDialog contract={contractRaw} />
             <TerminateContractDialog contractId={contract.id} currentEndDate={contractRaw.end_date} />
           </div>
@@ -181,12 +186,25 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
           )}
 
           <Section title="Vigencia">
+            {contract.is_rolling && (
+              <div className="flex items-center gap-1.5 mb-3 text-xs text-olive-700 bg-olive-50 px-3 py-2 rounded-lg">
+                <RefreshCw className="w-3.5 h-3.5 flex-shrink-0" />
+                Mes a mes · preaviso de 1 mes
+              </div>
+            )}
             <DetailRow icon={<CalendarDays className="w-4 h-4" />} label="Inicio">
               <span className="text-sm text-gray-800">{formatDate(contract.start_date)}</span>
             </DetailRow>
+            {contract.notice_given_at && (
+              <DetailRow icon={<BellRing className="w-4 h-4" />} label="Preaviso notificado el">
+                <span className="text-sm text-amber-700 font-medium">{formatDate(contract.notice_given_at)}</span>
+              </DetailRow>
+            )}
             <DetailRow icon={<CalendarDays className="w-4 h-4" />} label="Fin">
               <span className="text-sm text-gray-800">
-                {contract.end_date ? formatDate(contract.end_date) : "Indefinido"}
+                {contract.end_date
+                  ? formatDate(contract.end_date)
+                  : contract.is_rolling ? "Mes a mes (sin fecha fijada)" : "Indefinido"}
               </span>
             </DetailRow>
           </Section>
@@ -198,6 +216,13 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
             <DetailRow icon={<CreditCard className="w-4 h-4" />} label="Fianza">
               <span className="text-sm font-semibold text-gray-900">{formatCurrency(contract.deposit_amount)}</span>
             </DetailRow>
+          </Section>
+
+          <Section title="Documento">
+            <ContractDocumentUpload
+              contractId={contract.id}
+              documentPath={contractRaw.document_url ?? null}
+            />
           </Section>
 
           {contract.notes && (

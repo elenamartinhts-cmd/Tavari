@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Pencil } from "lucide-react";
 import type { Tenant } from "@/lib/types";
+import { updateTenantAssignment } from "@/app/actions/update-tenant-assignment";
 
 export default function EditTenantDialog({ tenant }: { tenant: Tenant }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rooms, setRooms] = useState<{ id: string; number: string; monthly_rent: number; status: string; properties: { name: string } | null }[]>([]);
   const [form, setForm] = useState({
     full_name: tenant.full_name,
     email: tenant.email,
@@ -24,8 +26,21 @@ export default function EditTenantDialog({ tenant }: { tenant: Tenant }) {
     emergency_contact_phone: tenant.emergency_contact_phone ?? "",
     move_in_date: tenant.move_in_date ?? "",
     move_out_date: tenant.move_out_date ?? "",
+    room_id: tenant.room_id ?? "",
+    monthly_rent: "",
   });
   const router = useRouter();
+
+  useEffect(() => {
+    if (!open) return;
+    const supabase = createClient();
+    supabase
+      .from("rooms")
+      .select("id, number, monthly_rent, status, properties(name)")
+      .or(tenant.room_id ? `status.in.(vacant,reserved),id.eq.${tenant.room_id}` : "status.in.(vacant,reserved)")
+      .order("number")
+      .then(({ data }) => setRooms((data as any) ?? []));
+  }, [open, tenant.room_id]);
 
   function set(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -36,6 +51,21 @@ export default function EditTenantDialog({ tenant }: { tenant: Tenant }) {
     setLoading(true);
     setError(null);
     const supabase = createClient();
+
+    // Handle room / rent change via server action
+    const roomChanged = form.room_id !== (tenant.room_id ?? "");
+    const newRent = parseFloat(form.monthly_rent);
+    if (roomChanged || (form.monthly_rent && newRent > 0)) {
+      const result = await updateTenantAssignment({
+        tenantId: tenant.id,
+        oldRoomId: tenant.room_id ?? null,
+        newRoomId: form.room_id || null,
+        newMonthlyRent: form.monthly_rent && newRent > 0 ? newRent : null,
+      });
+      if (result.error) { setError(result.error); setLoading(false); return; }
+    }
+
+    // Update remaining tenant fields
     const { error: updateError } = await supabase.from("tenants").update({
       full_name: form.full_name,
       email: form.email,
@@ -106,6 +136,42 @@ export default function EditTenantDialog({ tenant }: { tenant: Tenant }) {
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Fecha entrada" type="date" value={form.move_in_date} onChange={set("move_in_date")} />
                 <Field label="Fecha salida" type="date" value={form.move_out_date} onChange={set("move_out_date")} />
+              </div>
+
+              {/* Room & rent */}
+              <div className="border-t border-gray-100 pt-3 mt-1">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Habitación y renta</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Habitación</label>
+                    <select
+                      value={form.room_id}
+                      onChange={set("room_id")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-olive-500"
+                    >
+                      <option value="">Sin habitación</option>
+                      {rooms.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          Hab. {r.number}{r.properties ? ` · ${r.properties.name}` : ""}{r.id === tenant.room_id ? " (actual)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Nueva renta mensual (€) <span className="text-gray-400 font-normal">— actualiza pagos pendientes</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.monthly_rent}
+                      onChange={set("monthly_rent")}
+                      placeholder="Dejar vacío para no cambiar"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-olive-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}

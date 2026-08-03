@@ -18,6 +18,7 @@ import ContractStatusBadge from "@/components/contracts/contract-status-badge";
 import NewContractDialog from "@/components/contracts/new-contract-dialog";
 import PortalLinkButton from "@/components/tenants/portal-link-button";
 import InviteTenantButton from "@/components/tenants/invite-tenant-button";
+import ChangeRoomDialog from "@/components/tenants/change-room-dialog";
 
 type TenantDetail = Tenant & {
   rooms: (Room & { properties: Property }) | null;
@@ -304,6 +305,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             ) : (
               <p className="text-sm text-gray-400 italic">Sin habitación asignada</p>
             )}
+            <ChangeRoomDialog
+              tenantId={tenant.id}
+              currentRoomId={tenant.room_id ?? null}
+              currentRoomNumber={tenant.rooms?.number}
+            />
           </Section>
 
           {/* Contract dates */}
