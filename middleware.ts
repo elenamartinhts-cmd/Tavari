@@ -25,14 +25,18 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
 
   const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
+  const isAuthCallbackRoute = request.nextUrl.pathname.startsWith("/auth/callback");
 
   const isPortalRoute = request.nextUrl.pathname.startsWith("/portal");
   const isSetupRoute = request.nextUrl.pathname.startsWith("/tenant/setup");
   const isJoinRoute = request.nextUrl.pathname.startsWith("/tenant/join");
   const isUpdatePasswordRoute = request.nextUrl.pathname.startsWith("/update-password");
+
+  // Auth callback must pass through unauthenticated so it can exchange the code
+  if (isAuthCallbackRoute) return supabaseResponse;
 
   const role = user?.user_metadata?.role as string | undefined;
   const isTenant = role === "tenant";
