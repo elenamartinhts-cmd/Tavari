@@ -27,29 +27,47 @@ export async function updateTenantAssignment(opts: {
       .eq("landlord_id", user.id);
     if (error) return { error: error.message };
 
-    // Old room → vacant
     if (oldRoomId) {
-      await admin.from("rooms").update({ status: "vacant" }).eq("id", oldRoomId);
+      const { error: e } = await admin.from("rooms").update({ status: "vacant" }).eq("id", oldRoomId);
+      if (e) console.error("Failed to set old room vacant:", e.message);
     }
-    // New room → occupied
     if (newRoomId) {
-      await admin.from("rooms").update({ status: "occupied" }).eq("id", newRoomId);
+      const { error: e } = await admin.from("rooms").update({ status: "occupied" }).eq("id", newRoomId);
+      if (e) console.error("Failed to set new room occupied:", e.message);
     }
   }
 
-  // Update future pending payments amount AND room's monthly_rent
-  if (newMonthlyRent && newMonthlyRent > 0) {
-    const roomId = newRoomId || opts.oldRoomId;
+  // Effective rent: explicit value if given, otherwise auto-apply new room's price when room changed
+  let effectiveRent = (newMonthlyRent && newMonthlyRent > 0) ? newMonthlyRent : null;
+  if (!effectiveRent && roomChanged && newRoomId) {
+    const { data: newRoom } = await admin
+      .from("rooms")
+      .select("monthly_rent")
+      .eq("id", newRoomId)
+      .single();
+    if (newRoom?.monthly_rent && newRoom.monthly_rent > 0) {
+      effectiveRent = newRoom.monthly_rent;
+    }
+  }
+
+  // Sync room's stored monthly_rent and all future pending payments
+  if (effectiveRent) {
+    const roomId = newRoomId || oldRoomId;
     if (roomId) {
-      await admin.from("rooms").update({ monthly_rent: newMonthlyRent }).eq("id", roomId);
+      const { error: roomRentError } = await admin
+        .from("rooms")
+        .update({ monthly_rent: effectiveRent })
+        .eq("id", roomId);
+      if (roomRentError) return { error: "No se pudo actualizar el precio de la habitación: " + roomRentError.message };
     }
     const today = new Date().toISOString().split("T")[0];
-    await admin
+    const { error: paymentError } = await admin
       .from("payments")
-      .update({ amount: newMonthlyRent })
+      .update({ amount: effectiveRent })
       .eq("tenant_id", tenantId)
       .eq("status", "pending")
       .gte("due_date", today);
+    if (paymentError) return { error: "No se pudo actualizar el importe de los pagos: " + paymentError.message };
   }
 
   revalidatePath("/tenants");

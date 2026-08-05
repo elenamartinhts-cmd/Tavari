@@ -83,6 +83,9 @@ export async function createAndInviteTenant(formData: {
       .single();
 
     if (room) {
+      if (!room.monthly_rent || room.monthly_rent <= 0) {
+        warning = "La habitación no tiene precio mensual configurado. Los pagos se han creado a 0€ — corrígelo editando al inquilino.";
+      }
       const payments = buildPayments(
         formData.move_in_date,
         formData.move_out_date || null,
@@ -92,7 +95,10 @@ export async function createAndInviteTenant(formData: {
         formData.room_id,
       );
       if (payments.length > 0) {
-        await supabase.from("payments").insert(payments);
+        const { error: paymentError } = await supabase.from("payments").insert(payments);
+        if (paymentError) {
+          warning = "El inquilino se creó, pero no se pudieron generar los pagos automáticamente. Revísalo manualmente.";
+        }
       }
     }
   }
