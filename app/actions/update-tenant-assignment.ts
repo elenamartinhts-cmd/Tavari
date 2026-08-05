@@ -37,8 +37,12 @@ export async function updateTenantAssignment(opts: {
     }
   }
 
-  // Update future pending payments amount
+  // Update future pending payments amount AND room's monthly_rent
   if (newMonthlyRent && newMonthlyRent > 0) {
+    const roomId = newRoomId || opts.oldRoomId;
+    if (roomId) {
+      await admin.from("rooms").update({ monthly_rent: newMonthlyRent }).eq("id", roomId);
+    }
     const today = new Date().toISOString().split("T")[0];
     await admin
       .from("payments")
