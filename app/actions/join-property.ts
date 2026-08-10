@@ -99,8 +99,8 @@ export async function joinWithCode(
   }
 
   // Mark room as occupied
-  const { error: occupiedError } = await admin.from("rooms").update({ status: "occupied" }).eq("id", room.id);
-  if (occupiedError) console.error("Failed to mark room occupied after join:", occupiedError.message);
+  const { error: markOccupiedError } = await admin.from("rooms").update({ status: "occupied" }).eq("id", room.id);
+  if (markOccupiedError) console.error("Failed to mark room occupied after join:", markOccupiedError.message);
 
   // Update user metadata so future logins route correctly
   await admin.auth.admin.updateUserById(userId, {
