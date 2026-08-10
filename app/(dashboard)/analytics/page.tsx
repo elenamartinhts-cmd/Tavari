@@ -239,20 +239,28 @@ export default async function AnalyticsPage() {
 
       {/* Rentability summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalAllTimePaid)}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Total cobrado</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xl font-bold text-red-500">{formatCurrency(totalAllTimeExpenses)}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Total gastos</p>
-        </div>
-        <div className={`rounded-xl border p-4 text-center ${netRentability >= 0 ? "border-emerald-100 bg-emerald-50" : "border-red-100 bg-red-50"}`}>
-          <p className={`text-xl font-bold ${netRentability >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-            {netRentability >= 0 ? "" : "−"}{formatCurrency(Math.abs(netRentability))}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">{netRentability >= 0 ? "Rentabilidad neta" : "Déficit neto"}</p>
-        </div>
+        <KpiCard
+          icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
+          bg="bg-emerald-50"
+          label="Total cobrado"
+          value={formatCurrency(totalAllTimePaid)}
+          sub="Histórico acumulado"
+        />
+        <KpiCard
+          icon={<CreditCard className="w-5 h-5 text-red-500" />}
+          bg="bg-red-50"
+          label="Total gastos"
+          value={formatCurrency(totalAllTimeExpenses)}
+          sub="Histórico acumulado"
+        />
+        <KpiCard
+          icon={<Percent className="w-5 h-5 text-olive-600" />}
+          bg="bg-olive-50"
+          label="Rentabilidad neta"
+          value={`${netRentability < 0 ? "−" : ""}${formatCurrency(Math.abs(netRentability))}`}
+          sub="Cobrado menos gastos"
+          trend={netRentability > 0 ? "up" : netRentability < 0 ? "down" : "flat"}
+        />
       </div>
 
       {/* Per-property rentability table */}
