@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, TrendingUp, CreditCard, Percent, ArrowUp, ArrowDown } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { Property, Room, Tenant, PropertyExpense } from "@/lib/types";
 import RoomCard from "@/components/rooms/room-card";
@@ -127,26 +127,6 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         </div>
       )}
 
-      {/* Financial summary */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalPaid)}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Total cobrado</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xl font-bold text-red-500">{formatCurrency(totalExpenses)}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Total gastos</p>
-        </div>
-        <div className={`rounded-xl border p-4 text-center ${balance >= 0 ? "border-emerald-100 bg-emerald-50" : "border-red-100 bg-red-50"}`}>
-          <p className={`text-xl font-bold ${balance >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-            {balance >= 0 ? "" : "−"}{formatCurrency(Math.abs(balance))}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {balance >= 0 ? "Rentabilidad" : "Déficit"}
-          </p>
-        </div>
-      </div>
-
       {/* Room grid */}
       <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
         Habitaciones · {rooms.length}
@@ -167,6 +147,44 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             })}
         </div>
       )}
+
+      {/* Financial summary */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 font-medium">Total cobrado</p>
+          <p className="text-2xl font-bold text-gray-900 mt-0.5">{formatCurrency(totalPaid)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Histórico acumulado</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-red-500" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 font-medium">Total gastos</p>
+          <p className="text-2xl font-bold text-gray-900 mt-0.5">{formatCurrency(totalExpenses)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Histórico acumulado</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-olive-50 flex items-center justify-center">
+              <Percent className="w-5 h-5 text-olive-600" />
+            </div>
+            {balance > 0 && <ArrowUp className="w-4 h-4 text-emerald-500" />}
+            {balance < 0 && <ArrowDown className="w-4 h-4 text-red-500" />}
+          </div>
+          <p className="text-xs text-gray-500 font-medium">{balance >= 0 ? "Rentabilidad" : "Déficit"}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-0.5">
+            {balance < 0 ? "−" : ""}{formatCurrency(Math.abs(balance))}
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">Cobrado menos gastos</p>
+        </div>
+      </div>
 
       {/* Expenses section */}
       <div className="flex items-center justify-between mb-4">
