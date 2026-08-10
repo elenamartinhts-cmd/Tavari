@@ -35,9 +35,12 @@ export default function GenerateMonthlyDialog({
   const [dueDay, setDueDay] = useState("5");
   const router = useRouter();
 
-  // Only tenants with a room who don't already have a payment this month
+  // Only tenants with a room and a non-zero rent who don't already have a payment this month
   const eligible = activeTenants.filter(
-    (t) => t.rooms && !existingTenantIds.includes(t.id)
+    (t) => t.rooms && (t.rooms.monthly_rent ?? 0) > 0 && !existingTenantIds.includes(t.id)
+  );
+  const zeroRentTenants = activeTenants.filter(
+    (t) => t.rooms && (t.rooms.monthly_rent ?? 0) <= 0 && !existingTenantIds.includes(t.id)
   );
 
   const totalAmount = eligible.reduce((s, t) => s + (t.rooms?.monthly_rent ?? 0), 0);
@@ -146,6 +149,12 @@ export default function GenerateMonthlyDialog({
                     </table>
                   </div>
                 </>
+              )}
+
+              {zeroRentTenants.length > 0 && (
+                <p className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg mt-2">
+                  {zeroRentTenants.map((t) => t.full_name).join(", ")} — renta 0€, no incluidos. Corrige la renta desde su perfil.
+                </p>
               )}
 
               {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg mt-4">{error}</p>}

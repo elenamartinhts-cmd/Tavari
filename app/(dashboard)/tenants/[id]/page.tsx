@@ -51,8 +51,7 @@ async function getPayments(tenantId: string): Promise<PaymentRow[]> {
     .from("payments")
     .select("*, rooms(number)")
     .eq("tenant_id", tenantId)
-    .order("due_date", { ascending: false })
-    .limit(12);
+    .order("due_date", { ascending: false });
   return (data ?? []) as PaymentRow[];
 }
 

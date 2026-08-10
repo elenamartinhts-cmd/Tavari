@@ -30,13 +30,17 @@ export default function AddRoomDialog({ propertyId }: { propertyId: string }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.monthly_rent || parseFloat(form.monthly_rent) <= 0) {
+      setError("La renta mensual debe ser mayor que 0€.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const supabase = createClient();
     const { error: insertError } = await supabase.from("rooms").insert({
       property_id: propertyId,
       number: form.number,
-      monthly_rent: parseFloat(form.monthly_rent) || 0,
+      monthly_rent: parseFloat(form.monthly_rent),
       deposit_amount: parseFloat(form.deposit_amount) || 0,
       size_sqm: form.size_sqm ? parseFloat(form.size_sqm) : null,
       floor: form.floor ? parseInt(form.floor) : null,

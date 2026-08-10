@@ -76,7 +76,7 @@ export async function createAndInviteTenant(formData: {
 
   // Auto-generate monthly payments for the contract duration
   if (formData.room_id && formData.move_in_date) {
-    const { data: room } = await supabase
+    const { data: room } = await admin
       .from("rooms")
       .select("monthly_rent")
       .eq("id", formData.room_id)
@@ -107,7 +107,7 @@ export async function createAndInviteTenant(formData: {
   // Mark room as occupied — tenant row already exists, so a failure here leaves
   // the room incorrectly shown as vacant; surface it instead of failing silently
   if (formData.room_id) {
-    const { error: roomError } = await supabase
+    const { error: roomError } = await admin
       .from("rooms")
       .update({ status: "occupied" })
       .eq("id", formData.room_id);
