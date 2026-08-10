@@ -256,6 +256,7 @@ function RecurringRow({
             <ExternalLink className="w-3 h-3" />
           </a>
         )}
+        <EditExpenseDialog expense={template} />
         {!done && (
           <button onClick={handleApplyAndPay} disabled={isPending}
             className="flex items-center gap-1 text-xs text-olive-600 hover:text-olive-800 disabled:opacity-50 transition-colors">
