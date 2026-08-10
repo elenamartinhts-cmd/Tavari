@@ -220,6 +220,41 @@ export async function applyRecurringToPayments({
   return {};
 }
 
+export async function deletePropertyExpense(id: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autorizado" };
+
+  const admin = createAdminClient();
+
+  const { data: expense } = await admin
+    .from("property_expenses")
+    .select("id, property_id, is_recurring, expense_shares(id, added_to_payments)")
+    .eq("id", id)
+    .eq("landlord_id", user.id)
+    .single();
+
+  if (!expense) return { error: "Gasto no encontrado" };
+
+  // For instances and one-off expenses, block deletion if any share has been paid
+  if (!expense.is_recurring) {
+    const shares = (expense.expense_shares ?? []) as { added_to_payments: boolean }[];
+    if (shares.some((s) => s.added_to_payments)) {
+      return { error: "No se puede eliminar un gasto que ya ha sido añadido a pagos." };
+    }
+  }
+
+  const { error: deleteError } = await admin
+    .from("property_expenses")
+    .delete()
+    .eq("id", id);
+
+  if (deleteError) return { error: deleteError.message };
+
+  revalidatePath(`/properties/${expense.property_id}`);
+  return {};
+}
+
 export async function updatePropertyExpense({
   id,
   category,

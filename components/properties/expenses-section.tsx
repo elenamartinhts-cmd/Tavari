@@ -5,7 +5,7 @@ import {
   ExternalLink, Receipt, CheckCircle, Loader2,
   ChevronDown, ChevronRight, RefreshCw, Send,
 } from "lucide-react";
-import { addExpenseToPayments, applyRecurringToPayments } from "@/app/actions/property-expenses";
+import { addExpenseToPayments, applyRecurringToPayments, deletePropertyExpense } from "@/app/actions/property-expenses";
 import { sendExpensesToTenants } from "@/app/actions/send-expenses";
 import EditExpenseDialog from "@/components/properties/edit-expense-dialog";
 import type { PropertyExpense } from "@/lib/types";
@@ -67,6 +67,7 @@ function ExpenseRow({ expense, propertyId }: { expense: PropertyExpense; propert
     (expense.expense_shares ?? []).every((s) => s.added_to_payments)
   );
   const [err, setErr] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const shares = expense.expense_shares ?? [];
   const allAdded = shares.length > 0 && shares.every((s) => s.added_to_payments);
   const categoryColor = CATEGORY_COLORS[expense.category] ?? "bg-gray-100 text-gray-700";
@@ -76,6 +77,13 @@ function ExpenseRow({ expense, propertyId }: { expense: PropertyExpense; propert
       const result = await addExpenseToPayments(expense.id, propertyId);
       if (result.error) { setErr(result.error); return; }
       setDone(true);
+    });
+  }
+
+  function handleDelete() {
+    startTransition(async () => {
+      const result = await deletePropertyExpense(expense.id);
+      if (result.error) { setErr(result.error); setConfirmDelete(false); }
     });
   }
 
@@ -133,6 +141,25 @@ function ExpenseRow({ expense, propertyId }: { expense: PropertyExpense; propert
             <CheckCircle className="w-3.5 h-3.5" /> Añadido a pagos
           </span>
         )}
+        {!done && !allAdded && !confirmDelete && (
+          <button onClick={() => setConfirmDelete(true)}
+            className="text-xs text-red-400 hover:text-red-600 transition-colors ml-auto">
+            Eliminar
+          </button>
+        )}
+        {!done && !allAdded && confirmDelete && (
+          <span className="flex items-center gap-2 ml-auto">
+            <span className="text-xs text-gray-500">¿Eliminar?</span>
+            <button onClick={handleDelete} disabled={isPending}
+              className="text-xs text-red-600 font-medium hover:text-red-800 disabled:opacity-50">
+              Sí
+            </button>
+            <button onClick={() => setConfirmDelete(false)}
+              className="text-xs text-gray-400 hover:text-gray-600">
+              No
+            </button>
+          </span>
+        )}
         {err && <p className="text-xs text-red-600">{err}</p>}
       </div>
     </div>
@@ -146,11 +173,13 @@ function RecurringRow({
   monthKey,
   instance,
   propertyId,
+  isFirstMonth,
 }: {
   template: PropertyExpense;
   monthKey: string;
   instance: PropertyExpense | null;
   propertyId: string;
+  isFirstMonth: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const alreadyPaid = instance !== null &&
@@ -158,6 +187,8 @@ function RecurringRow({
     (instance.expense_shares ?? []).every((s) => s.added_to_payments);
   const [done, setDone] = useState(alreadyPaid);
   const [err, setErr] = useState<string | null>(null);
+  const [confirmStop, setConfirmStop] = useState(false);
+  const [confirmDeleteInst, setConfirmDeleteInst] = useState(false);
   const shares = instance?.expense_shares ?? [];
   const categoryColor = CATEGORY_COLORS[template.category] ?? "bg-gray-100 text-gray-700";
 
@@ -170,6 +201,21 @@ function RecurringRow({
       });
       if (result.error) { setErr(result.error); return; }
       setDone(true);
+    });
+  }
+
+  function handleStopRecurring() {
+    startTransition(async () => {
+      const result = await deletePropertyExpense(template.id);
+      if (result.error) { setErr(result.error); setConfirmStop(false); }
+    });
+  }
+
+  function handleDeleteInstance() {
+    if (!instance) return;
+    startTransition(async () => {
+      const result = await deletePropertyExpense(instance.id);
+      if (result.error) { setErr(result.error); setConfirmDeleteInst(false); }
     });
   }
 
@@ -222,6 +268,41 @@ function RecurringRow({
             <CheckCircle className="w-3.5 h-3.5" /> Añadido a pagos
           </span>
         )}
+
+        {/* Delete this month's applied instance if not yet paid */}
+        {instance && !done && !confirmDeleteInst && (
+          <button onClick={() => setConfirmDeleteInst(true)}
+            className="text-xs text-red-400 hover:text-red-600 transition-colors">
+            Eliminar este mes
+          </button>
+        )}
+        {instance && !done && confirmDeleteInst && (
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">¿Eliminar este mes?</span>
+            <button onClick={handleDeleteInstance} disabled={isPending}
+              className="text-xs text-red-600 font-medium hover:text-red-800 disabled:opacity-50">Sí</button>
+            <button onClick={() => setConfirmDeleteInst(false)}
+              className="text-xs text-gray-400 hover:text-gray-600">No</button>
+          </span>
+        )}
+
+        {/* Stop the recurring template (only show on first/earliest month) */}
+        {isFirstMonth && !confirmStop && (
+          <button onClick={() => setConfirmStop(true)}
+            className="text-xs text-red-400 hover:text-red-600 transition-colors ml-auto">
+            Cancelar gasto fijo
+          </button>
+        )}
+        {isFirstMonth && confirmStop && (
+          <span className="flex items-center gap-2 ml-auto">
+            <span className="text-xs text-gray-500">¿Cancelar para todos los meses?</span>
+            <button onClick={handleStopRecurring} disabled={isPending}
+              className="text-xs text-red-600 font-medium hover:text-red-800 disabled:opacity-50">Sí</button>
+            <button onClick={() => setConfirmStop(false)}
+              className="text-xs text-gray-400 hover:text-gray-600">No</button>
+          </span>
+        )}
+
         {err && <p className="text-xs text-red-600">{err}</p>}
       </div>
     </div>
@@ -235,6 +316,7 @@ function MonthGroup({
   oneOffExpenses,
   recurringTemplates,
   instancesByTemplate,
+  templateFirstMonth,
   propertyId,
   defaultOpen,
   lastSent,
@@ -243,6 +325,7 @@ function MonthGroup({
   oneOffExpenses: PropertyExpense[];
   recurringTemplates: PropertyExpense[];
   instancesByTemplate: Map<string, PropertyExpense>;
+  templateFirstMonth: Map<string, string>;
   propertyId: string;
   defaultOpen: boolean;
   lastSent: NotificationRecord | null;
@@ -347,6 +430,7 @@ function MonthGroup({
               monthKey={monthKey}
               instance={instancesByTemplate.get(template.id) ?? null}
               propertyId={propertyId}
+              isFirstMonth={templateFirstMonth.get(template.id) === monthKey}
             />
           ))}
           {!hasContent && (
@@ -385,6 +469,10 @@ export default function ExpensesSection({
   // Figure out month range to display
   const thisMonth = currentMonthKey();
 
+  // End at December of the current year so upcoming recurring months are visible
+  const yearEnd = `${new Date().getFullYear()}-12`;
+  const endKey = yearEnd > thisMonth ? yearEnd : thisMonth;
+
   // Start from 6 months ago, or the earliest expense — whichever is older
   const sixMonthsAgo = (() => {
     const d = new Date();
@@ -396,7 +484,7 @@ export default function ExpensesSection({
   const earliestExpense = allExpenseDates.sort()[0] ?? thisMonth;
   const startKey = earliestExpense < sixMonthsAgo ? earliestExpense : sixMonthsAgo;
 
-  const months = generateMonthRange(startKey, thisMonth);
+  const months = generateMonthRange(startKey, endKey);
 
   // One-off expenses grouped by month key
   const oneOffByMonth = new Map<string, PropertyExpense[]>();
@@ -424,11 +512,27 @@ export default function ExpensesSection({
     if (!existing || n.sent_at > existing.sent_at) notifByMonth.set(key, n);
   }
 
+  // Track which month is the first (earliest future) each template appears in,
+  // so "Cancelar gasto fijo" only shows once (on the earliest upcoming month)
+  const templateFirstMonth = new Map<string, string>();
+  for (const monthKey of [...months].reverse()) {
+    for (const t of recurring) {
+      if (periodToKey(t.period_month) < monthKey) {
+        templateFirstMonth.set(t.id, monthKey);
+      }
+    }
+  }
+
   return (
     <div className="space-y-3">
-      {months.map((monthKey, idx) => {
+      {months.map((monthKey) => {
+        // Only show a recurring template in months strictly AFTER its creation month
+        const applicableRecurring = recurring.filter(
+          (t) => periodToKey(t.period_month) < monthKey
+        );
+
         const instancesByTemplate = new Map<string, PropertyExpense>();
-        for (const template of recurring) {
+        for (const template of applicableRecurring) {
           const inst = instancesByTemplateAndMonth.get(template.id)?.get(monthKey);
           if (inst) instancesByTemplate.set(template.id, inst);
         }
@@ -438,10 +542,11 @@ export default function ExpensesSection({
             key={monthKey}
             monthKey={monthKey}
             oneOffExpenses={oneOffByMonth.get(monthKey) ?? []}
-            recurringTemplates={recurring}
+            recurringTemplates={applicableRecurring}
             instancesByTemplate={instancesByTemplate}
+            templateFirstMonth={templateFirstMonth}
             propertyId={propertyId}
-            defaultOpen={idx === 0}
+            defaultOpen={monthKey === thisMonth}
             lastSent={notifByMonth.get(monthKey) ?? null}
           />
         );
