@@ -220,6 +220,76 @@ export async function applyRecurringToPayments({
   return {};
 }
 
+export async function updatePropertyExpense({
+  id,
+  category,
+  description,
+  amount,
+  period_month,
+  factura_url,
+  notes,
+  split_among_tenants,
+}: {
+  id: string;
+  category: string;
+  description: string;
+  amount: number;
+  period_month: string;
+  factura_url?: string;
+  notes?: string;
+  split_among_tenants: boolean;
+}): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autorizado" };
+
+  const admin = createAdminClient();
+
+  const { data: expense } = await admin
+    .from("property_expenses")
+    .select("id, property_id, expense_shares(id, added_to_payments)")
+    .eq("id", id)
+    .eq("landlord_id", user.id)
+    .single();
+
+  if (!expense) return { error: "Gasto no encontrado" };
+
+  const existingShares = (expense.expense_shares ?? []) as { id: string; added_to_payments: boolean }[];
+  if (existingShares.some((s) => s.added_to_payments)) {
+    return { error: "No se puede editar un gasto que ya ha sido añadido a pagos." };
+  }
+
+  const { error: updateError } = await admin
+    .from("property_expenses")
+    .update({
+      category,
+      description: description || "",
+      amount,
+      period_month: `${period_month}-01`,
+      factura_url: factura_url || null,
+      notes: notes || null,
+    })
+    .eq("id", id);
+
+  if (updateError) return { error: updateError.message };
+
+  if (existingShares.length > 0) {
+    await admin.from("expense_shares").delete().eq("expense_id", id);
+  }
+
+  if (split_among_tenants) {
+    const tenants = await getTenantsInProperty(admin, expense.property_id, user.id);
+    const newShares = buildShares(id, amount, tenants);
+    if (newShares.length > 0) {
+      const { error: sharesError } = await admin.from("expense_shares").insert(newShares);
+      if (sharesError) return { error: sharesError.message };
+    }
+  }
+
+  revalidatePath(`/properties/${expense.property_id}`);
+  return {};
+}
+
 export async function addExpenseToPayments(
   expenseId: string,
   propertyId: string

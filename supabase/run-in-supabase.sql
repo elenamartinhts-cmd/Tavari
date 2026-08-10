@@ -60,6 +60,8 @@ exception when duplicate_object then null; end $$;
 
 grant select, insert, update, delete on property_expenses to authenticated;
 grant select, insert, update, delete on expense_shares to authenticated;
+grant all on property_expenses to service_role;
+grant all on expense_shares to service_role;
 
 -- ── Migration 011: recurring flag ──────────────────────────────────────────
 alter table property_expenses add column if not exists is_recurring boolean not null default false;
@@ -88,6 +90,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 grant select, insert, update, delete on expense_notifications to authenticated;
+grant all on expense_notifications to service_role;
 
 -- ── Migration 014: tenant_notifications ────────────────────────────────────
 create table if not exists tenant_notifications (
@@ -123,6 +126,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 grant select, insert, update on tenant_notifications to authenticated;
+grant all on tenant_notifications to service_role;
 
 -- ── Migration 015: expenses_included on tenants ────────────────────────────
 alter table tenants add column if not exists expenses_included boolean not null default false;

@@ -30,6 +30,71 @@ export async function sendExpensesToTenants(
 
   if (!property) return { error: "Propiedad no encontrada" };
 
+  // Auto-apply any recurring templates not yet applied for this month
+  const { data: recurringTemplates } = await admin
+    .from("property_expenses")
+    .select("id, category, description, amount, factura_url, notes")
+    .eq("property_id", propertyId)
+    .eq("landlord_id", user.id)
+    .eq("is_recurring", true);
+
+  for (const tpl of (recurringTemplates ?? [])) {
+    const { data: existingInst } = await admin
+      .from("property_expenses")
+      .select("id")
+      .eq("template_id", tpl.id)
+      .eq("period_month", periodDate)
+      .maybeSingle();
+    if (existingInst) continue;
+
+    const { data: inst } = await admin
+      .from("property_expenses")
+      .insert({
+        property_id: propertyId,
+        landlord_id: user.id,
+        category: tpl.category,
+        description: tpl.description || "",
+        amount: tpl.amount,
+        period_month: periodDate,
+        factura_url: tpl.factura_url,
+        notes: tpl.notes,
+        is_recurring: false,
+        template_id: tpl.id,
+      })
+      .select("id")
+      .single();
+
+    if (!inst) continue;
+
+    const { data: rooms } = await admin.from("rooms").select("id").eq("property_id", propertyId);
+    const roomIds = new Set((rooms ?? []).map((r: { id: string }) => r.id));
+    const { data: allTenants } = await admin
+      .from("tenants")
+      .select("id, room_id, expenses_included")
+      .eq("landlord_id", user.id)
+      .eq("is_active", true);
+    const propertyTenants = (allTenants ?? []).filter(
+      (t: { room_id: string | null }) => t.room_id && roomIds.has(t.room_id)
+    ) as { id: string; room_id: string; expenses_included: boolean }[];
+
+    if (propertyTenants.length > 0) {
+      const totalCount = propertyTenants.length;
+      const baseShare = Math.floor((tpl.amount / totalCount) * 100) / 100;
+      const totalBase = Math.round(baseShare * totalCount * 100) / 100;
+      const remainder = Math.round((tpl.amount - totalBase) * 100) / 100;
+      const payingTenants = propertyTenants.filter((t) => !t.expenses_included);
+      const shares = payingTenants.map((t, i) => ({
+        expense_id: inst.id,
+        tenant_id: t.id,
+        amount: i === 0 ? Math.round((baseShare + remainder) * 100) / 100 : baseShare,
+        added_to_payments: false,
+      }));
+      if (shares.length > 0) {
+        await admin.from("expense_shares").insert(shares);
+      }
+    }
+  }
+
   // All one-off expenses for this month (includes applied recurring instances)
   const { data: monthExpenses } = await admin
     .from("property_expenses")

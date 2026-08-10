@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { addExpenseToPayments, applyRecurringToPayments } from "@/app/actions/property-expenses";
 import { sendExpensesToTenants } from "@/app/actions/send-expenses";
+import EditExpenseDialog from "@/components/properties/edit-expense-dialog";
 import type { PropertyExpense } from "@/lib/types";
 
 export type NotificationRecord = { period_month: string; sent_at: string; tenant_count: number };
@@ -119,6 +120,7 @@ function ExpenseRow({ expense, propertyId }: { expense: PropertyExpense; propert
             <ExternalLink className="w-3 h-3" />
           </a>
         )}
+        {!done && !allAdded && <EditExpenseDialog expense={expense} />}
         {shares.length > 0 && !done && !allAdded && (
           <button onClick={handleAddToPayments} disabled={isPending}
             className="flex items-center gap-1 text-xs text-olive-600 hover:text-olive-800 disabled:opacity-50 transition-colors">
