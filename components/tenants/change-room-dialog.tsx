@@ -44,11 +44,12 @@ export default function ChangeRoomDialog({
     if (!selectedRoomId) return;
     setLoading(true);
     setError(null);
+    const newRoomRent = selected?.monthly_rent ?? null;
     const result = await updateTenantAssignment({
       tenantId,
       oldRoomId: currentRoomId,
       newRoomId: selectedRoomId,
-      newMonthlyRent: null,
+      newMonthlyRent: newRoomRent && newRoomRent > 0 ? newRoomRent : null,
     });
     setLoading(false);
     if (result.error) { setError(result.error); return; }
