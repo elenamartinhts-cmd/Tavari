@@ -66,7 +66,8 @@ export async function joinWithCode(
 
   for (const existing of [existingByUserId, existingByEmail]) {
     if (!existing) continue;
-    await admin.from("tenants").update({ is_active: false }).eq("id", existing.id);
+    const { error: deactivateError } = await admin.from("tenants").update({ is_active: false }).eq("id", existing.id);
+    if (deactivateError) return { error: "Error al desvincular cuenta anterior. Inténtalo de nuevo." };
     if (existing.room_id) {
       await admin.from("rooms").update({ status: "vacant" }).eq("id", existing.room_id);
     }
@@ -98,7 +99,8 @@ export async function joinWithCode(
   }
 
   // Mark room as occupied
-  await admin.from("rooms").update({ status: "occupied" }).eq("id", room.id);
+  const { error: occupiedError } = await admin.from("rooms").update({ status: "occupied" }).eq("id", room.id);
+  if (occupiedError) console.error("Failed to mark room occupied after join:", occupiedError.message);
 
   // Update user metadata so future logins route correctly
   await admin.auth.admin.updateUserById(userId, {

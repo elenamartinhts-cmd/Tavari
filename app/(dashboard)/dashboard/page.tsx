@@ -20,10 +20,14 @@ const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","
 async function getDashboardData(landlordId: string) {
   const supabase = await createClient();
 
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 24);
+  const cutoffStr = cutoff.toISOString().split("T")[0];
+
   const [propertiesRes, roomsRes, paymentsRes, issuesRes, tenantsRes] = await Promise.all([
     supabase.from("properties").select("id").eq("landlord_id", landlordId),
     supabase.from("rooms").select("id, status, monthly_rent, property_id, properties!inner(landlord_id)").eq("properties.landlord_id", landlordId),
-    supabase.from("payments").select("amount, status, due_date, paid_date, tenants!inner(landlord_id)").eq("tenants.landlord_id", landlordId),
+    supabase.from("payments").select("amount, status, due_date, paid_date, tenants!inner(landlord_id)").eq("tenants.landlord_id", landlordId).gte("due_date", cutoffStr),
     supabase.from("maintenance_issues").select("id, title, priority, status, created_at, properties!inner(landlord_id, name), rooms(number)").eq("properties.landlord_id", landlordId).in("status", ["open", "in_progress"]).order("created_at", { ascending: false }).limit(5),
     supabase.from("tenants").select("id, full_name, room_id, move_in_date, move_out_date, rooms(number, properties(name))").eq("landlord_id", landlordId).eq("is_active", true).order("move_in_date", { ascending: false }).limit(5),
   ]);
@@ -44,7 +48,8 @@ async function getDashboardData(landlordId: string) {
     occupied_rooms: rooms.filter((r) => r.status === "occupied").length,
     vacant_rooms: rooms.filter((r) => r.status === "vacant").length,
     monthly_income: thisMonthPayments.filter((p: any) => p.status === "paid").reduce((sum: number, p: any) => sum + p.amount, 0),
-    pending_income: thisMonthPayments.filter((p: any) => p.status === "pending" || p.status === "overdue").reduce((sum: number, p: any) => sum + p.amount, 0),
+    // All pending/overdue across all time — not just this month
+    pending_income: payments.filter((p: any) => p.status === "pending" || p.status === "overdue").reduce((sum: number, p: any) => sum + p.amount, 0),
     open_issues: issuesRes.data?.length ?? 0,
     urgent_issues: issuesRes.data?.filter((i) => i.priority === "urgent").length ?? 0,
   };

@@ -15,6 +15,10 @@ import IssuesBreakdown from "@/components/analytics/issues-breakdown";
 async function getAnalyticsData(landlordId: string) {
   const supabase = await createClient();
 
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 24);
+  const cutoffStr = cutoff.toISOString().split("T")[0];
+
   const [propertiesRes, tenantsRes, paymentsRes, issuesRes] = await Promise.all([
     supabase
       .from("properties")
@@ -27,7 +31,8 @@ async function getAnalyticsData(landlordId: string) {
     supabase
       .from("payments")
       .select("amount, status, due_date, paid_date, tenants!inner(landlord_id)")
-      .eq("tenants.landlord_id", landlordId),
+      .eq("tenants.landlord_id", landlordId)
+      .gte("due_date", cutoffStr),
     supabase
       .from("maintenance_issues")
       .select("category, status, priority, properties!inner(landlord_id)")

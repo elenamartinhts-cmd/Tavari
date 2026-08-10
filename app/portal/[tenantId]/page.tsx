@@ -58,8 +58,7 @@ async function getTenantPortalData(tenantId: string) {
     .from("payments")
     .select("id, amount, due_date, paid_date, status, notes")
     .eq("tenant_id", tenantId)
-    .order("due_date", { ascending: false })
-    .limit(24);
+    .order("due_date", { ascending: false });
 
   return {
     tenant,
