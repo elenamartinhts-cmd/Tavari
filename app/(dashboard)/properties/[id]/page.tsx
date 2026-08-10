@@ -42,6 +42,17 @@ async function getNotifications(propertyId: string) {
   return (data ?? []) as NotificationRecord[];
 }
 
+async function getPaidPayments(roomIds: string[]) {
+  if (roomIds.length === 0) return [];
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("payments")
+    .select("amount")
+    .in("room_id", roomIds)
+    .eq("status", "paid");
+  return (data ?? []) as { amount: number }[];
+}
+
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -57,6 +68,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
   if (!property) notFound();
 
   const rooms = property.rooms ?? [];
+  const roomIds = rooms.map((r) => r.id);
+
+  const paidPayments = await getPaidPayments(roomIds);
+
   const occupied = rooms.filter((r) => r.status === "occupied").length;
   const vacant = rooms.filter((r) => r.status === "vacant").length;
   const maintenance = rooms.filter((r) => r.status === "maintenance").length;
@@ -66,6 +81,12 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
   const activeTenantCount = rooms.reduce((count, r) => {
     return count + (r.tenants ?? []).filter((t) => t.is_active).length;
   }, 0);
+
+  const totalExpenses = expenses
+    .filter((e) => !e.is_recurring)
+    .reduce((s, e) => s + e.amount, 0);
+  const totalPaid = paidPayments.reduce((s, p) => s + p.amount, 0);
+  const balance = totalPaid - totalExpenses;
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -105,6 +126,26 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           <p className="text-xl font-bold text-olive-800">{formatCurrency(totalRent)}</p>
         </div>
       )}
+
+      {/* Financial summary */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalPaid)}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Total cobrado</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-xl font-bold text-red-500">{formatCurrency(totalExpenses)}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Total gastos</p>
+        </div>
+        <div className={`rounded-xl border p-4 text-center ${balance >= 0 ? "border-emerald-100 bg-emerald-50" : "border-red-100 bg-red-50"}`}>
+          <p className={`text-xl font-bold ${balance >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+            {balance >= 0 ? "" : "−"}{formatCurrency(Math.abs(balance))}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {balance >= 0 ? "Rentabilidad" : "Déficit"}
+          </p>
+        </div>
+      </div>
 
       {/* Room grid */}
       <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
