@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { formatCurrency } from "@/lib/utils";
 import {
   Building2, DoorOpen, TrendingUp, Users,
@@ -14,12 +15,13 @@ import IssuesBreakdown from "@/components/analytics/issues-breakdown";
 
 async function getAnalyticsData(landlordId: string) {
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - 24);
   const cutoffStr = cutoff.toISOString().split("T")[0];
 
-  const [propertiesRes, tenantsRes, paymentsRes, issuesRes] = await Promise.all([
+  const [propertiesRes, tenantsRes, paymentsRes, issuesRes, allTimePaidRes, expensesRes] = await Promise.all([
     supabase
       .from("properties")
       .select("id, name, rooms(id, status, monthly_rent, tenants(id, is_active))")
@@ -37,6 +39,16 @@ async function getAnalyticsData(landlordId: string) {
       .from("maintenance_issues")
       .select("category, status, priority, properties!inner(landlord_id)")
       .eq("properties.landlord_id", landlordId),
+    supabase
+      .from("payments")
+      .select("amount, room_id, tenants!inner(landlord_id)")
+      .eq("tenants.landlord_id", landlordId)
+      .eq("status", "paid"),
+    admin
+      .from("property_expenses")
+      .select("amount, property_id")
+      .eq("landlord_id", landlordId)
+      .eq("is_recurring", false),
   ]);
 
   return {
@@ -44,6 +56,8 @@ async function getAnalyticsData(landlordId: string) {
     tenants: tenantsRes.data ?? [],
     payments: paymentsRes.data ?? [],
     issues: issuesRes.data ?? [],
+    allTimePaid: allTimePaidRes.data ?? [],
+    expenses: expensesRes.data ?? [],
   };
 }
 
@@ -86,7 +100,7 @@ export default async function AnalyticsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { properties, tenants, payments, issues } = await getAnalyticsData(user.id);
+  const { properties, tenants, payments, issues, allTimePaid, expenses } = await getAnalyticsData(user.id);
 
   // Portfolio
   const totalRooms = properties.flatMap((p: any) => p.rooms ?? []);
@@ -153,6 +167,35 @@ export default async function AnalyticsPage() {
 
   const urgentIssues = openIssues.filter((i: any) => i.priority === "urgent").length;
 
+  // Rentability: build room → property map, then group paid/expenses by property
+  const roomToProperty = new Map<string, string>();
+  for (const prop of properties as any[]) {
+    for (const room of (prop.rooms ?? [])) roomToProperty.set(room.id, prop.id);
+  }
+
+  const propPaidMap = new Map<string, number>();
+  const propExpensesMap = new Map<string, number>();
+
+  for (const p of allTimePaid as any[]) {
+    const propId = roomToProperty.get(p.room_id);
+    if (propId) propPaidMap.set(propId, (propPaidMap.get(propId) ?? 0) + p.amount);
+  }
+  for (const e of expenses as any[]) {
+    propExpensesMap.set(e.property_id, (propExpensesMap.get(e.property_id) ?? 0) + e.amount);
+  }
+
+  const totalAllTimePaid = Array.from(propPaidMap.values()).reduce((s, v) => s + v, 0);
+  const totalAllTimeExpenses = Array.from(propExpensesMap.values()).reduce((s, v) => s + v, 0);
+  const netRentability = totalAllTimePaid - totalAllTimeExpenses;
+
+  const propertyRentability = (properties as any[]).map((p) => ({
+    id: p.id,
+    name: p.name,
+    paid: propPaidMap.get(p.id) ?? 0,
+    expenses: propExpensesMap.get(p.id) ?? 0,
+    balance: (propPaidMap.get(p.id) ?? 0) - (propExpensesMap.get(p.id) ?? 0),
+  }));
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8">
@@ -193,6 +236,56 @@ export default async function AnalyticsPage() {
           sub={`Renta media ${formatCurrency(avgRent)}/mes`}
         />
       </div>
+
+      {/* Rentability summary */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalAllTimePaid)}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Total cobrado</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-xl font-bold text-red-500">{formatCurrency(totalAllTimeExpenses)}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Total gastos</p>
+        </div>
+        <div className={`rounded-xl border p-4 text-center ${netRentability >= 0 ? "border-emerald-100 bg-emerald-50" : "border-red-100 bg-red-50"}`}>
+          <p className={`text-xl font-bold ${netRentability >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+            {netRentability >= 0 ? "" : "−"}{formatCurrency(Math.abs(netRentability))}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">{netRentability >= 0 ? "Rentabilidad neta" : "Déficit neto"}</p>
+        </div>
+      </div>
+
+      {/* Per-property rentability table */}
+      {propertyRentability.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+          <div className="px-5 py-2.5 flex items-center gap-4 text-xs text-gray-400 font-medium uppercase border-b border-gray-100">
+            <p className="flex-1">Propiedad</p>
+            <p className="w-28 text-right">Cobrado</p>
+            <p className="w-28 text-right">Gastos</p>
+            <p className="w-28 text-right">Balance</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {propertyRentability.map((p) => (
+              <div key={p.id} className="px-5 py-3 flex items-center gap-4">
+                <p className="text-sm font-medium text-gray-900 flex-1">{p.name}</p>
+                <p className="text-sm text-emerald-600 w-28 text-right">{formatCurrency(p.paid)}</p>
+                <p className="text-sm text-red-500 w-28 text-right">{formatCurrency(p.expenses)}</p>
+                <p className={`text-sm font-semibold w-28 text-right ${p.balance >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                  {p.balance >= 0 ? "" : "−"}{formatCurrency(Math.abs(p.balance))}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="px-5 py-3 bg-gray-50 flex items-center gap-4 border-t border-gray-100">
+            <p className="text-xs font-semibold text-gray-500 uppercase flex-1">Total</p>
+            <p className="text-sm font-bold text-emerald-600 w-28 text-right">{formatCurrency(totalAllTimePaid)}</p>
+            <p className="text-sm font-bold text-red-500 w-28 text-right">{formatCurrency(totalAllTimeExpenses)}</p>
+            <p className={`text-sm font-bold w-28 text-right ${netRentability >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+              {netRentability >= 0 ? "" : "−"}{formatCurrency(Math.abs(netRentability))}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Revenue chart + payment health */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
