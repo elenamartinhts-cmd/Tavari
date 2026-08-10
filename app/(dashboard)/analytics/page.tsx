@@ -237,6 +237,39 @@ export default async function AnalyticsPage() {
         />
       </div>
 
+      {/* Revenue chart + payment health */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <RevenueBarChart months={revenueMonths} />
+        </div>
+        <div>
+          <PaymentHealthBar
+            paid={paidAmount}
+            pending={pendingAmount}
+            overdue={overdueAmount}
+            partial={partialAmount}
+            collectionRate={collectionRate}
+            paidCount={thisMonthPaid.length}
+            pendingCount={thisMonthPending.length}
+            overdueCount={thisMonthOverdue.length}
+          />
+        </div>
+      </div>
+
+      {/* Occupancy + Issues */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <OccupancyByProperty
+          properties={propertyOccupancy}
+          potential={monthlyPotential}
+          actual={monthlyActual}
+        />
+        <IssuesBreakdown
+          byCategory={issuesByCategory}
+          total={openIssues.length}
+          urgent={urgentIssues}
+        />
+      </div>
+
       {/* Rentability summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <KpiCard
@@ -265,7 +298,7 @@ export default async function AnalyticsPage() {
 
       {/* Per-property rentability table */}
       {propertyRentability.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-2.5 flex items-center gap-4 text-xs text-gray-400 font-medium uppercase border-b border-gray-100">
             <p className="flex-1">Propiedad</p>
             <p className="w-28 text-right">Cobrado</p>
@@ -294,39 +327,6 @@ export default async function AnalyticsPage() {
           </div>
         </div>
       )}
-
-      {/* Revenue chart + payment health */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2">
-          <RevenueBarChart months={revenueMonths} />
-        </div>
-        <div>
-          <PaymentHealthBar
-            paid={paidAmount}
-            pending={pendingAmount}
-            overdue={overdueAmount}
-            partial={partialAmount}
-            collectionRate={collectionRate}
-            paidCount={thisMonthPaid.length}
-            pendingCount={thisMonthPending.length}
-            overdueCount={thisMonthOverdue.length}
-          />
-        </div>
-      </div>
-
-      {/* Occupancy + Issues */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <OccupancyByProperty
-          properties={propertyOccupancy}
-          potential={monthlyPotential}
-          actual={monthlyActual}
-        />
-        <IssuesBreakdown
-          byCategory={issuesByCategory}
-          total={openIssues.length}
-          urgent={urgentIssues}
-        />
-      </div>
     </div>
   );
 }
