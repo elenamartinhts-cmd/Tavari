@@ -20,6 +20,7 @@ export async function signContractAsLandlord(
   });
 
   if (error) return { error: error.message };
+  revalidatePath("/contracts");
   revalidatePath(`/contracts/${contractId}`);
   return {};
 }

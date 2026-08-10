@@ -75,6 +75,15 @@ export default function DeactivateTenantButton({
       return;
     }
 
+    // Remove future pending payments — they will never be collected
+    const today = new Date().toISOString().split("T")[0];
+    await supabase
+      .from("payments")
+      .delete()
+      .eq("tenant_id", tenantId)
+      .eq("status", "pending")
+      .gte("due_date", today);
+
     setLoading(false);
     setOpen(false);
     router.push("/tenants");
