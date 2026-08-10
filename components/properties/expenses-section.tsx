@@ -517,7 +517,7 @@ export default function ExpensesSection({
   const templateFirstMonth = new Map<string, string>();
   for (const monthKey of [...months].reverse()) {
     for (const t of recurring) {
-      if (periodToKey(t.period_month) < monthKey) {
+      if (periodToKey(t.period_month) <= monthKey) {
         templateFirstMonth.set(t.id, monthKey);
       }
     }
@@ -526,9 +526,9 @@ export default function ExpensesSection({
   return (
     <div className="space-y-3">
       {months.map((monthKey) => {
-        // Only show a recurring template in months strictly AFTER its creation month
+        // Only show a recurring template in months on or after its start month
         const applicableRecurring = recurring.filter(
-          (t) => periodToKey(t.period_month) < monthKey
+          (t) => periodToKey(t.period_month) <= monthKey
         );
 
         const instancesByTemplate = new Map<string, PropertyExpense>();

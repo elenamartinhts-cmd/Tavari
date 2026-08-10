@@ -174,12 +174,12 @@ export default function AddExpenseDialog({
                     {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                   </select>
                 </div>
-                {!form.is_recurring && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Mes *</label>
-                    <input type="month" value={form.period_month} onChange={set("period_month")} className={inp} />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    {form.is_recurring ? "Mes de inicio *" : "Mes *"}
+                  </label>
+                  <input type="month" value={form.period_month} onChange={set("period_month")} className={inp} />
+                </div>
               </div>
 
               <div>
