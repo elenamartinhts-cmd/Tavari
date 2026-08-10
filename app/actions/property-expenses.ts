@@ -51,6 +51,7 @@ export async function addPropertyExpense({
   factura_url,
   notes,
   is_recurring,
+  split_among_tenants,
 }: {
   property_id: string;
   category: string;
@@ -60,6 +61,7 @@ export async function addPropertyExpense({
   factura_url?: string;
   notes?: string;
   is_recurring?: boolean;
+  split_among_tenants?: boolean;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -94,7 +96,7 @@ export async function addPropertyExpense({
   const expense = rows[0];
 
   // Recurring templates get no shares — they're applied per-month on demand
-  if (!is_recurring) {
+  if (!is_recurring && split_among_tenants) {
     const tenants = await getTenantsInProperty(admin, property_id, user.id);
     const shares = buildShares(expense.id, amount, tenants);
     if (shares.length > 0) {

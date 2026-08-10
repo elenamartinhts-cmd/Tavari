@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, RefreshCw } from "lucide-react";
+import { Plus, X, RefreshCw, Users } from "lucide-react";
 import { addPropertyExpense } from "@/app/actions/property-expenses";
 
 const CATEGORIES = [
@@ -43,6 +43,7 @@ export default function AddExpenseDialog({
     factura_url: "",
     notes: "",
     is_recurring: false,
+    split_among_tenants: false,
   });
 
   function set(field: keyof typeof form) {
@@ -56,7 +57,7 @@ export default function AddExpenseDialog({
   function close() {
     setOpen(false);
     setError(null);
-    setForm({ category: "Electricidad", description: "", amount: "", period_month: defaultMonth, factura_url: "", notes: "", is_recurring: false });
+    setForm({ category: "Electricidad", description: "", amount: "", period_month: defaultMonth, factura_url: "", notes: "", is_recurring: false, split_among_tenants: false });
     router.refresh();
   }
 
@@ -73,6 +74,7 @@ export default function AddExpenseDialog({
         factura_url: form.factura_url || undefined,
         notes: form.notes || undefined,
         is_recurring: form.is_recurring,
+        split_among_tenants: form.split_among_tenants,
       });
       if (result.error) { setError(result.error); return; }
       close();
@@ -96,7 +98,7 @@ export default function AddExpenseDialog({
             <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between">
               <div>
                 <h3 className="font-semibold text-gray-900">Nuevo gasto</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Se repartirá entre los inquilinos activos.</p>
+                <p className="text-xs text-gray-400 mt-0.5">Gasto de la propiedad.</p>
               </div>
               <button onClick={close} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -135,6 +137,36 @@ export default function AddExpenseDialog({
                 <RefreshCw className={`w-4 h-4 ml-auto shrink-0 ${form.is_recurring ? "text-olive-600" : "text-gray-300"}`} />
               </button>
 
+              {/* Split checkbox */}
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, split_among_tenants: !f.split_among_tenants }))}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-colors text-left ${
+                  form.split_among_tenants
+                    ? "border-olive-500 bg-olive-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors ${
+                  form.split_among_tenants ? "bg-olive-600 border-olive-600" : "border-gray-300"
+                }`}>
+                  {form.split_among_tenants && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${form.split_among_tenants ? "text-olive-800" : "text-gray-700"}`}>
+                    Repartir entre inquilinos
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Se divide a partes iguales entre los inquilinos con gastos a parte en el contrato
+                  </p>
+                </div>
+                <Users className={`w-4 h-4 ml-auto shrink-0 ${form.split_among_tenants ? "text-olive-600" : "text-gray-300"}`} />
+              </button>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Categoría *</label>
@@ -166,17 +198,17 @@ export default function AddExpenseDialog({
                   placeholder="0.00"
                   className={inp}
                 />
-                {numAmount > 0 && activeTenantCount > 0 && !form.is_recurring && (
+                {form.split_among_tenants && numAmount > 0 && activeTenantCount > 0 && !form.is_recurring && (
                   <p className="text-xs text-olive-700 mt-1">
                     {activeTenantCount} {activeTenantCount === 1 ? "inquilino activo" : "inquilinos activos"} · {shareAmount.toFixed(2)} € por persona
                   </p>
                 )}
-                {numAmount > 0 && activeTenantCount > 0 && form.is_recurring && (
+                {form.split_among_tenants && numAmount > 0 && activeTenantCount > 0 && form.is_recurring && (
                   <p className="text-xs text-olive-700 mt-1">
                     Al aplicar: {shareAmount.toFixed(2)} € por persona entre {activeTenantCount} {activeTenantCount === 1 ? "inquilino" : "inquilinos"}
                   </p>
                 )}
-                {activeTenantCount === 0 && !form.is_recurring && (
+                {form.split_among_tenants && activeTenantCount === 0 && !form.is_recurring && (
                   <p className="text-xs text-amber-600 mt-1">No hay inquilinos activos — el gasto quedará registrado sin repartir.</p>
                 )}
               </div>
