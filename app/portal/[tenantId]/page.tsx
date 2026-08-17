@@ -54,10 +54,12 @@ async function getTenantPortalData(tenantId: string) {
     .order("created_at", { ascending: false })
     .limit(40);
 
+  const today = new Date().toISOString().split("T")[0];
   const { data: payments } = await supabase
     .from("payments")
     .select("id, amount, due_date, paid_date, status, notes")
     .eq("tenant_id", tenantId)
+    .lte("due_date", today)
     .order("due_date", { ascending: false });
 
   return {

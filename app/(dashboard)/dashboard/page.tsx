@@ -42,14 +42,15 @@ async function getDashboardData(landlordId: string) {
     (p.paid_date ?? p.due_date)?.startsWith(currentMonth)
   );
 
+  const today = now.toISOString().split("T")[0];
+
   const stats: DashboardStats = {
     total_properties: propertiesRes.data?.length ?? 0,
     total_rooms: rooms.length,
     occupied_rooms: rooms.filter((r) => r.status === "occupied").length,
     vacant_rooms: rooms.filter((r) => r.status === "vacant").length,
     monthly_income: thisMonthPayments.filter((p: any) => p.status === "paid").reduce((sum: number, p: any) => sum + p.amount, 0),
-    // All pending/overdue across all time — not just this month
-    pending_income: payments.filter((p: any) => p.status === "pending" || p.status === "overdue").reduce((sum: number, p: any) => sum + p.amount, 0),
+    pending_income: payments.filter((p: any) => (p.status === "pending" || p.status === "overdue") && p.due_date <= today).reduce((sum: number, p: any) => sum + p.amount, 0),
     open_issues: issuesRes.data?.length ?? 0,
     urgent_issues: issuesRes.data?.filter((i) => i.priority === "urgent").length ?? 0,
   };
