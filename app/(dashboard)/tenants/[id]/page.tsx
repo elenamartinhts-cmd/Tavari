@@ -48,10 +48,12 @@ async function getTenant(id: string, landlordId: string): Promise<TenantDetail |
 
 async function getPayments(tenantId: string): Promise<PaymentRow[]> {
   const supabase = await createClient();
+  const today = new Date().toISOString().split("T")[0];
   const { data } = await supabase
     .from("payments")
     .select("*, rooms(number)")
     .eq("tenant_id", tenantId)
+    .lte("due_date", today)
     .order("due_date", { ascending: false });
   return (data ?? []) as PaymentRow[];
 }
