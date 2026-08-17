@@ -5,7 +5,8 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const type = searchParams.get("type");
+  const next = searchParams.get("next") ?? (type === "recovery" ? "/auth/update-password" : "/dashboard");
 
   if (code) {
     const cookieStore = await cookies();
