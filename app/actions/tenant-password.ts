@@ -51,7 +51,7 @@ export async function setTenantPassword(
 
   if (!authUserId) return { error: "Este inquilino aún no ha creado su cuenta." };
 
-  const { error } = await admin.auth.admin.updateUser(authUserId, { password: newPassword });
+  const { error } = await admin.auth.admin.updateUserById(authUserId, { password: newPassword });
   if (error) return { error: error.message };
 
   return {};
