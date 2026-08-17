@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, TrendingUp, CreditCard, Percent, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronLeft, TrendingUp, CreditCard, Percent, ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { Property, Room, Tenant, PropertyExpense } from "@/lib/types";
 import RoomCard from "@/components/rooms/room-card";
@@ -59,18 +59,17 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [property, expenses, notifications] = await Promise.all([
-    getProperty(id, user.id),
-    getExpenses(id),
-    getNotifications(id),
-  ]);
-
+  const property = await getProperty(id, user.id);
   if (!property) notFound();
 
   const rooms = property.rooms ?? [];
   const roomIds = rooms.map((r) => r.id);
 
-  const paidPayments = await getPaidPayments(roomIds);
+  const [expenses, notifications, paidPayments] = await Promise.all([
+    getExpenses(id),
+    getNotifications(id),
+    getPaidPayments(roomIds),
+  ]);
 
   const occupied = rooms.filter((r) => r.status === "occupied").length;
   const vacant = rooms.filter((r) => r.status === "vacant").length;
@@ -177,6 +176,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             </div>
             {balance > 0 && <ArrowUp className="w-4 h-4 text-emerald-500" />}
             {balance < 0 && <ArrowDown className="w-4 h-4 text-red-500" />}
+            {balance === 0 && <Minus className="w-4 h-4 text-gray-300" />}
           </div>
           <p className="text-xs text-gray-500 font-medium">{balance >= 0 ? "Rentabilidad" : "Déficit"}</p>
           <p className="text-2xl font-bold text-gray-900 mt-0.5">
@@ -189,7 +189,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
       {/* Expenses section */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-          Gastos · {expenses.length}
+          Gastos · {expenses.filter((e) => !e.is_recurring).length}
         </h2>
         <AddExpenseDialog propertyId={property.id} activeTenantCount={activeTenantCount} />
       </div>

@@ -168,6 +168,7 @@ export default async function AnalyticsPage() {
   const urgentIssues = openIssues.filter((i: any) => i.priority === "urgent").length;
 
   // Rentability: build room → property map, then group paid/expenses by property
+  const currentPropertyIds = new Set((properties as any[]).map((p) => p.id));
   const roomToProperty = new Map<string, string>();
   for (const prop of properties as any[]) {
     for (const room of (prop.rooms ?? [])) roomToProperty.set(room.id, prop.id);
@@ -180,13 +181,12 @@ export default async function AnalyticsPage() {
     const propId = roomToProperty.get(p.room_id);
     if (propId) propPaidMap.set(propId, (propPaidMap.get(propId) ?? 0) + p.amount);
   }
+  // Only count expenses for properties that still exist — avoids asymmetry with deleted properties
   for (const e of expenses as any[]) {
-    propExpensesMap.set(e.property_id, (propExpensesMap.get(e.property_id) ?? 0) + e.amount);
+    if (currentPropertyIds.has(e.property_id)) {
+      propExpensesMap.set(e.property_id, (propExpensesMap.get(e.property_id) ?? 0) + e.amount);
+    }
   }
-
-  const totalAllTimePaid = Array.from(propPaidMap.values()).reduce((s, v) => s + v, 0);
-  const totalAllTimeExpenses = Array.from(propExpensesMap.values()).reduce((s, v) => s + v, 0);
-  const netRentability = totalAllTimePaid - totalAllTimeExpenses;
 
   const propertyRentability = (properties as any[]).map((p) => ({
     id: p.id,
@@ -195,6 +195,11 @@ export default async function AnalyticsPage() {
     expenses: propExpensesMap.get(p.id) ?? 0,
     balance: (propPaidMap.get(p.id) ?? 0) - (propExpensesMap.get(p.id) ?? 0),
   }));
+
+  // Derive totals from the visible rows so footer always matches the table
+  const totalAllTimePaid = propertyRentability.reduce((s, p) => s + p.paid, 0);
+  const totalAllTimeExpenses = propertyRentability.reduce((s, p) => s + p.expenses, 0);
+  const netRentability = totalAllTimePaid - totalAllTimeExpenses;
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -297,7 +302,7 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* Per-property rentability table */}
-      {propertyRentability.length > 0 && (
+      {properties.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-2.5 flex items-center gap-4 text-xs text-gray-400 font-medium uppercase border-b border-gray-100">
             <p className="flex-1">Propiedad</p>
