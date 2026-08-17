@@ -41,12 +41,12 @@ async function getAnalyticsData(landlordId: string) {
       .eq("properties.landlord_id", landlordId),
     supabase
       .from("payments")
-      .select("amount, room_id, tenants!inner(landlord_id)")
+      .select("amount, room_id, paid_date, due_date, tenants!inner(landlord_id)")
       .eq("tenants.landlord_id", landlordId)
       .eq("status", "paid"),
     admin
       .from("property_expenses")
-      .select("amount, property_id")
+      .select("amount, property_id, period_month")
       .eq("landlord_id", landlordId)
       .eq("is_recurring", false),
   ]);
@@ -201,6 +201,23 @@ export default async function AnalyticsPage() {
   const totalAllTimeExpenses = propertyRentability.reduce((s, p) => s + p.expenses, 0);
   const netRentability = totalAllTimePaid - totalAllTimeExpenses;
 
+  // Current-year rentability
+  const currentYear = String(new Date().getFullYear());
+  let annualPaid = 0;
+  for (const p of allTimePaid as any[]) {
+    const dateRef = p.paid_date ?? p.due_date;
+    if (!dateRef?.startsWith(currentYear)) continue;
+    const propId = roomToProperty.get(p.room_id);
+    if (propId) annualPaid += p.amount;
+  }
+  let annualExpenses = 0;
+  for (const e of expenses as any[]) {
+    if (currentPropertyIds.has(e.property_id) && e.period_month?.startsWith(currentYear)) {
+      annualExpenses += e.amount;
+    }
+  }
+  const annualRentability = annualPaid - annualExpenses;
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8">
@@ -297,6 +314,7 @@ export default async function AnalyticsPage() {
           label="Rentabilidad neta"
           value={`${netRentability < 0 ? "−" : ""}${formatCurrency(Math.abs(netRentability))}`}
           sub="Cobrado menos gastos"
+          sub2={`Anual ${currentYear}: ${annualRentability < 0 ? "−" : ""}${formatCurrency(Math.abs(annualRentability))}`}
           trend={netRentability > 0 ? "up" : netRentability < 0 ? "down" : "flat"}
         />
       </div>
@@ -337,10 +355,10 @@ export default async function AnalyticsPage() {
 }
 
 function KpiCard({
-  icon, bg, label, value, sub, trend,
+  icon, bg, label, value, sub, sub2, trend,
 }: {
   icon: React.ReactNode; bg: string; label: string;
-  value: string; sub?: string; trend?: "up" | "down" | "flat";
+  value: string; sub?: string; sub2?: string; trend?: "up" | "down" | "flat";
 }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -353,6 +371,7 @@ function KpiCard({
       <p className="text-xs text-gray-500 font-medium">{label}</p>
       <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+      {sub2 && <p className="text-xs text-gray-400 mt-0.5">{sub2}</p>}
     </div>
   );
 }
