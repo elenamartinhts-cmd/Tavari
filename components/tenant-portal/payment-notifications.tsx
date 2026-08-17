@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
-import { AlertCircle, Clock, CalendarClock, CheckCheck } from "lucide-react";
-import { markNotificationRead } from "@/app/actions/send-expenses";
+import { useState, useTransition } from "react";
+import { AlertCircle, Clock, CalendarClock, X, Trash2 } from "lucide-react";
+import { markNotificationRead, dismissNotification, dismissAllNotifications } from "@/app/actions/send-expenses";
 
 type PaymentNotif = {
   id: string;
@@ -54,7 +54,15 @@ const typeConfig = {
   },
 };
 
-function PaymentNotifCard({ notif, tenantId }: { notif: PaymentNotif; tenantId: string }) {
+function PaymentNotifCard({
+  notif,
+  tenantId,
+  onDismiss,
+}: {
+  notif: PaymentNotif;
+  tenantId: string;
+  onDismiss: (id: string) => void;
+}) {
   const [, startTransition] = useTransition();
   const cfg = typeConfig[notif.type] ?? typeConfig.payment_due;
   const Icon = cfg.icon;
@@ -64,6 +72,12 @@ function PaymentNotifCard({ notif, tenantId }: { notif: PaymentNotif; tenantId: 
     if (isUnread) {
       startTransition(() => markNotificationRead(tenantId, notif.id));
     }
+  }
+
+  function handleDismiss(e: React.MouseEvent) {
+    e.stopPropagation();
+    onDismiss(notif.id);
+    startTransition(() => dismissNotification(tenantId, notif.id));
   }
 
   return (
@@ -86,6 +100,13 @@ function PaymentNotifCard({ notif, tenantId }: { notif: PaymentNotif; tenantId: 
           {new Date(notif.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
         </p>
       </div>
+      <button
+        onClick={handleDismiss}
+        className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0 mt-0.5 p-0.5 rounded"
+        title="Eliminar aviso"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
       {isUnread && <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${cfg.dot}`} />}
     </div>
   );
@@ -98,9 +119,24 @@ export default function PaymentNotifications({
   notifications: PaymentNotif[];
   tenantId: string;
 }) {
-  if (notifications.length === 0) return null;
+  const [visible, setVisible] = useState(() => notifications.map((n) => n.id));
+  const [, startTransition] = useTransition();
 
-  const unreadCount = notifications.filter((n) => !n.read_at).length;
+  const shown = notifications.filter((n) => visible.includes(n.id));
+  if (shown.length === 0) return null;
+
+  const unreadCount = shown.filter((n) => !n.read_at).length;
+
+  function handleDismiss(id: string) {
+    setVisible((prev) => prev.filter((v) => v !== id));
+  }
+
+  function handleClearAll() {
+    setVisible([]);
+    startTransition(() => dismissAllNotifications(tenantId, "payment_upcoming"));
+    startTransition(() => dismissAllNotifications(tenantId, "payment_due"));
+    startTransition(() => dismissAllNotifications(tenantId, "payment_overdue"));
+  }
 
   return (
     <div>
@@ -113,10 +149,18 @@ export default function PaymentNotifications({
             {unreadCount} nueva{unreadCount > 1 ? "s" : ""}
           </span>
         )}
+        <button
+          onClick={handleClearAll}
+          className="ml-auto flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          title="Eliminar todos los avisos"
+        >
+          <Trash2 className="w-3 h-3" />
+          Limpiar todo
+        </button>
       </div>
       <div className="space-y-2">
-        {notifications.map((n) => (
-          <PaymentNotifCard key={n.id} notif={n} tenantId={tenantId} />
+        {shown.map((n) => (
+          <PaymentNotifCard key={n.id} notif={n} tenantId={tenantId} onDismiss={handleDismiss} />
         ))}
       </div>
     </div>

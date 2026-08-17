@@ -158,11 +158,29 @@ export async function markNotificationRead(tenantId: string, notificationId: str
   if (!UUID_RE.test(tenantId) || !UUID_RE.test(notificationId)) return;
 
   const admin = createAdminClient();
-  // Ownership check: a notification can only be marked read by the tenant it belongs to —
-  // the portal is reachable without auth, so this can't rely on a session check.
   await admin
     .from("tenant_notifications")
     .update({ read_at: new Date().toISOString() })
     .eq("id", notificationId)
     .eq("tenant_id", tenantId);
+}
+
+export async function dismissNotification(tenantId: string, notificationId: string) {
+  if (!UUID_RE.test(tenantId) || !UUID_RE.test(notificationId)) return;
+
+  const admin = createAdminClient();
+  await admin
+    .from("tenant_notifications")
+    .delete()
+    .eq("id", notificationId)
+    .eq("tenant_id", tenantId);
+}
+
+export async function dismissAllNotifications(tenantId: string, type?: string) {
+  if (!UUID_RE.test(tenantId)) return;
+
+  const admin = createAdminClient();
+  let query = admin.from("tenant_notifications").delete().eq("tenant_id", tenantId);
+  if (type) query = query.eq("type", type);
+  await query;
 }
