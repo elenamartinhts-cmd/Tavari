@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, X, Users } from "lucide-react";
 import { updatePropertyExpense } from "@/app/actions/property-expenses";
 import type { PropertyExpense } from "@/lib/types";
+import FacturaUpload from "@/components/properties/factura-upload";
 
 const CATEGORIES = [
   "Electricidad", "Agua", "Gas", "Comunidad de propietarios",
@@ -148,9 +149,12 @@ export default function EditExpenseDialog({ expense }: { expense: PropertyExpens
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Enlace a la factura (opcional)</label>
-                <input value={form.factura_url} onChange={set("factura_url")} placeholder="Google Drive, Dropbox…" className={inp} />
-                <p className="text-xs text-gray-400 mt-1">Los inquilinos podrán ver este enlace en su portal.</p>
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Factura o recibo (opcional)</label>
+                <FacturaUpload
+                  value={form.factura_url}
+                  onChange={(url) => setForm((f) => ({ ...f, factura_url: url }))}
+                />
+                <p className="text-xs text-gray-400 mt-1.5">Los inquilinos podrán ver el documento en su portal.</p>
               </div>
 
               <div>
