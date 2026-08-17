@@ -311,7 +311,7 @@ export default async function AnalyticsPage() {
         <KpiCard
           icon={<Percent className="w-5 h-5 text-olive-600" />}
           bg="bg-olive-50"
-          label={`Rentabilidad neta ${currentYear}`}
+          label="Rentabilidad neta anual"
           value={`${annualRentability < 0 ? "−" : ""}${formatCurrency(Math.abs(annualRentability))}`}
           sub="Cobrado menos gastos"
           trend={annualRentability > 0 ? "up" : annualRentability < 0 ? "down" : "flat"}
