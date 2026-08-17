@@ -19,6 +19,7 @@ import NewContractDialog from "@/components/contracts/new-contract-dialog";
 import PortalLinkButton from "@/components/tenants/portal-link-button";
 import InviteTenantButton from "@/components/tenants/invite-tenant-button";
 import ChangeRoomDialog from "@/components/tenants/change-room-dialog";
+import SetPasswordDialog from "@/components/tenants/set-password-dialog";
 
 type TenantDetail = Tenant & {
   rooms: (Room & { properties: Property }) | null;
@@ -141,6 +142,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <div className="flex items-center gap-2">
           {tenant.is_active && <InviteTenantButton tenantId={tenant.id} inviteSentAt={tenant.invite_sent_at} />}
           {tenant.is_active && <PortalLinkButton tenantId={tenant.id} />}
+          {tenant.is_active && <SetPasswordDialog tenantId={tenant.id} tenantName={tenant.full_name} hasAccount={!!tenant.user_id} />}
           <EditTenantDialog tenant={tenant} />
           {tenant.is_active && <DeactivateTenantButton tenantId={tenant.id} tenantName={tenant.full_name} />}
         </div>
