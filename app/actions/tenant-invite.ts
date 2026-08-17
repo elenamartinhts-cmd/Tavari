@@ -51,6 +51,12 @@ export async function inviteTenant(
         await admin.auth.admin.updateUserById(existing.id, {
           user_metadata: { role: "tenant", tenant_id: tenantId },
         });
+        // Link the auth user back to the tenant record so landlord can manage their password
+        await admin
+          .from("tenants")
+          .update({ user_id: existing.id })
+          .eq("id", tenantId);
+        revalidatePath(`/tenants/${tenantId}`);
       }
       return { alreadyExists: true };
     }
