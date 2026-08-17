@@ -144,7 +144,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <div className="flex items-center gap-2">
           {tenant.is_active && <InviteTenantButton tenantId={tenant.id} inviteSentAt={tenant.invite_sent_at} />}
           {tenant.is_active && <PortalLinkButton tenantId={tenant.id} />}
-          {tenant.is_active && <SetPasswordDialog tenantId={tenant.id} tenantName={tenant.full_name} hasAccount={!!(tenant.user_id || tenant.invite_sent_at)} />}
+          {tenant.is_active && <SetPasswordDialog tenantId={tenant.id} tenantName={tenant.full_name} hasAccount={true} />}
           <EditTenantDialog tenant={tenant} />
           {tenant.is_active && <DeactivateTenantButton tenantId={tenant.id} tenantName={tenant.full_name} />}
         </div>
