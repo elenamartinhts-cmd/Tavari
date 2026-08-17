@@ -37,7 +37,7 @@ export default function SetPasswordDialog({ tenantId, tenantName, hasAccount }: 
         onClick={handleOpen}
         disabled={!hasAccount}
         title={!hasAccount ? "El inquilino aún no tiene cuenta" : undefined}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
       >
         <KeyRound className="w-3.5 h-3.5" />
         Contraseña

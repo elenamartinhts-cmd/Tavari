@@ -40,16 +40,12 @@ export default function InviteTenantButton({ tenantId, inviteSentAt }: Props) {
 
   if (alreadyExists) {
     return (
-      <div className="flex flex-col items-end gap-1 max-w-xs">
-        <div className="flex items-center gap-1.5 px-3 py-2 text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>Ya tiene cuenta</span>
-        </div>
-        <p className="text-xs text-gray-500 text-right leading-snug">
-          Dile que vaya a la app y use{" "}
-          <span className="font-medium text-gray-700">¿Olvidaste tu contraseña?</span>{" "}
-          para acceder a su portal.
-        </p>
+      <div
+        className="flex items-center gap-1.5 px-3 py-2 text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200 whitespace-nowrap"
+        title="El inquilino ya tiene cuenta. Usa el botón Contraseña para establecerle una."
+      >
+        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <span>Ya tiene cuenta</span>
       </div>
     );
   }
@@ -59,7 +55,7 @@ export default function InviteTenantButton({ tenantId, inviteSentAt }: Props) {
       <button
         onClick={handleInvite}
         disabled={isPending}
-        className="flex items-center gap-1.5 px-3 py-2 text-sm bg-olive-600 text-white rounded-lg hover:bg-olive-700 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 px-3 py-2 text-sm bg-olive-600 text-white rounded-lg hover:bg-olive-700 transition-colors disabled:opacity-50 whitespace-nowrap"
       >
         {isPending ? (
           <><RefreshCw className="w-4 h-4 animate-spin" /> Enviando...</>

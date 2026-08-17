@@ -94,7 +94,7 @@ export default function DeactivateTenantButton({
     <>
       <button
         onClick={handleOpen}
-        className="flex items-center gap-1.5 px-3 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap"
       >
         <UserMinus className="w-4 h-4" />
         Dar de baja
